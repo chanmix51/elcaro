@@ -52,7 +52,7 @@ La commande `SHOW` doit nous retourner `company, public` signe que le client Pos
         parent_id           integer     REFERENCES department (department_id)
         );
 
-Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons qie le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département père. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à existant au préalable dans la table.
+Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons que le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département père. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à exister au préalable dans la table.
 
     elcaro$> CREATE TABLE employee (
         employee_id         serial          PRIMARY KEY,
