@@ -1,6 +1,6 @@
 <?php
 
-namespace Elcaro\Company\Base;
+namespace ElCaro\Company\Base;
 
 use \Pomm\Object\BaseObjectMap;
 use \Pomm\Exception\Exception;
@@ -10,7 +10,7 @@ abstract class DepartmentMap extends BaseObjectMap
     public function initialize()
     {
 
-        $this->object_class =  'Elcaro\Company\Department';
+        $this->object_class =  'ElCaro\Company\Department';
         $this->object_name  =  'company.department';
 
         $this->addField('department_id', 'int4');

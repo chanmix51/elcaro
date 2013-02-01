@@ -1,10 +1,10 @@
 <?php
 
-namespace Elcaro\Company;
+namespace ElCaro\Company;
 
 use \Pomm\Object\BaseObject;
 use \Pomm\Exception\Exception;
 
-class Department extends BaseObject
+class Employee extends BaseObject
 {
 }

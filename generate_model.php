@@ -1,4 +1,4 @@
-<?php // bin/generate_model.php
+<?php
  
 $connection = require(__DIR__."/bootstrap.php");
  
