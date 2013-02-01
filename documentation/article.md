@@ -66,7 +66,7 @@ La commande `SHOW` doit nous retourner `company, public` signe que le client Pos
         parent_id           integer     REFERENCES department (department_id)
         );
 
-Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons que le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département père. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à exister au préalable dans la table.
+Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto-incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons que le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département père. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à exister au préalable dans la table.
 
 ```sql
 el-caro$> CREATE TABLE employee (
@@ -80,7 +80,7 @@ el-caro$> CREATE TABLE employee (
     );
 ```
 
-Nous voyons ici que la structure d'un empoyé est fortement contrainte. Une vérification -- pour l'exemple -- d'age est faite pour vérifier que la date de naissance entrée ne corresponde pas à un mineur. Dans le cas d'un employé, l'appartenance à un département est rendue obligatoire par la contrainte `NOT NULL` sur le champs de clé étrangère `department_id` vers la table `department`.
+Nous voyons ici que la structure d'un employé est fortement contrainte. Une vérification -- pour l'exemple -- d'age est faite pour vérifier que la date de naissance entrée ne corresponde pas à un mineur. Dans le cas d'un employé, l'appartenance à un département est rendue obligatoire par la contrainte `NOT NULL` sur le champs de clé étrangère `department_id` vers la table `department`.
 
 Un jeu de données est disponible dans [ce Gist](https://gist.github.com/raw/4664191/c1fbaba2c82b4d2950709ec2c208852894d16152/structure.sql [wget me]).
 
@@ -143,7 +143,7 @@ Cette architecture ne choquera pas les utilisateurs habitués à utiliser des OR
  * Une classe portant le même nom mais affublé du suffix `Map`
  * La même classe dans le sous namespace `Base`.
 
-Les classes du sous namespace `Base` contiennent la définition déduite depuis la structure de la base de données. Ces fichiers seront écrasés à chaque introspection en cas d'évolution de la structure de la base, il serait donc malvenu qu'elle contiennent du code que nous aurions pu placer là. C'est pour cela que la classe `Map` hérite de sa consoeur dans `Base`. Vous pouvez y placer votre code, cette classe ne sera pas écrasée. 
+Les classes du sous namespace `Base` contiennent la définition déduite depuis la structure de la base de données. Ces fichiers seront écrasés à chaque introspection en cas d'évolution de la structure de la base, il serait donc malvenu qu'elle contiennent du code que nous aurions pu placer là. C'est pour cela que la classe `Map` hérite de sa consœur dans `Base`. Vous pouvez y placer votre code, cette classe ne sera pas écrasée. 
 
 Les utilisateurs d'ORMs ne seront pas non plus surpris d'apprendre que la classe Map est l'outil qui s'occupera de gérer la vie leur entité correspondante avec la base de données, à savoir :
 
@@ -190,7 +190,7 @@ Commentons le code ci dessus :
 
  1. La connexion nous permet d'instancier les classes Map
  2. La classe Map sait faire des requêtes qui ramènent des collections d'entités correspondantes.
- 3. Ces collections sont accessibles via foreach et retournent leurs entités
+ 3. Ces collections sont accessibles via `foreach` et retournent leurs entités
  4. Les valeurs internes des entités sont accessibles via la notation de tableau.
 
 Comment faire dans ces conditions pour surcharger nos entités ? Tout bonnement comme n'importe quelle entité. Si nous souhaitons par exemple afficher le nom des départements en minuscules commençant par une majuscule, il suffit de créer la méthode `getName()` dans la classe `Department` :
@@ -212,6 +212,6 @@ class Department extends BaseObject
 }
 ```
 
-L'appel à `$department['name']` utilisera alors cette surcharge. Il est bien évidemment possible d'appeler directement les accesseurs `$department->getId()` fonctionnera tout comme `$department['id']`.
+L'appel à `$department['name']` utilisera alors cette surcharge. Il est bien évidemment possible d'appeler directement les accesseurs `$department->getId()` fonctionnera tout comme `$department['id']`. Seul les accesseurs génériques `get()` et `set()` échappent aux surchargent pour permettre de manipuler les valeurs venant de la base ce qui est pratique pour faire des requêtes SQL par exemple.
 
 
