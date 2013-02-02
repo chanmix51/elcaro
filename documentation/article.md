@@ -309,4 +309,47 @@ Si vous rafraîchissez désormais la page, celle-ci présente une erreur, PHP ne
 
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
 
-Requêtes orientées objet
+Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée n'est pas très portable car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Nous verrons en quoi cela pose problème et comment "bien faire"™. 
+
+Requêtes SQL
+------------
+
+Si désormais, nous souhaitons afficher le nom du service au lieu du department_id, nous allons devoir créer une jointure pour ramener cette information. Créons une méthode dans notre classe de modèle dont le but sera de ramener un employé avec des informations sur son service. On peut bien sûr coucher immédiatement la requête nécessaire :
+
+```sql
+SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id = ?
+```
+
+Cependant, la requête sous cette forme présente des inconvénients :
+
+ * elle ne prend pas `getSelectFields()` en compte et ne retournera pas `age`.
+ * indiquer le nom des tables "en dur" peut nous poser des problèmes d'évolutivité.
+
+Les classes Map de Pomm proposent ainsi des méthodes pour avoir ces informations de façon dynamique. Idéalement, notre requête pourrait être vue sous cette forme:
+
+```sql
+SELECT %A, dept.name FROM %B NATURAL JOIN %C WHERE employee_id = ?
+```
+
+ * %A est la liste des colonnes que l'on souhaite ramener de la table B.
+ * %B est la table des employés.
+ * %C est la table des départements.
+
+B et C sont facilement remplacés grâce à la méthode `getTable()` de chaque classe Map. Nous savons que l'on peut obtenir la liste des colonnes a ramener avec la méthode `getSelectFields()` mais cette méthode retourne un tableau associatif dont la clé est l'alias du champs et la valeur hé bien ... sa valeur. Il faut donc formater ce tableau en une liste de champs. Les classes Map proposent pour cela des méthodes dédiées : [les formateurs](http://pomm.coolkeums.org/documentation/manual-1.1#fields-formatters).
+
+ * `formatFields(methode, alias)`
+ * `formatFieldsWithAlias(methode, alias)`
+
+```php
+$this->formatFields('getSelectFields', 'pika');
+// "pika.employee_id", "pika.first_name", "pika.last_name", "pika. ....
+$this->formatFieldsWithAlias('getSelectFields', 'plop');
+// "plop.employee_id" AS "employee_id", "plop.first_name" AS "first_name", ...
+```
+
+Ainsi équipé, l'écriture de requêtes devient facile :
+
+```php
+<?php // lib/ElCaro/Company/EmployeeMap.php
+// [...]
+

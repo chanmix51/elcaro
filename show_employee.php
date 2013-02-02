@@ -6,7 +6,7 @@ $connection = require(__DIR__."/bootstrap.php");
 
 if (!$employee = $connection
     ->getMapFor('\ElCaro\Company\Employee')
-    ->findByPk(array('employee_id' => $_GET['employee_id'])))
+    ->getEmployeeWithDepartment($_GET['employee_id']))
 {
     printf("No such user.");
     exit;
@@ -26,7 +26,7 @@ if (!$employee = $connection
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
       <li>day salary indice: <?php printf("%05.2f", $employee["day_salary"]) ?>.</li>
       <li>Status: <?php echo $employee["is_manager"] ? "manager" : "worker" ?>.</li>
-      <li>Department: <?php echo $employee["department_id"] ?>.</li>
+      <li>Department: <?php echo $employee["department_name"] ?>.</li>
     </ul>
   </body>
 </html>
