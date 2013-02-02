@@ -17,7 +17,7 @@ En quoi Pomm est il différent d'un ORM et pourquoi l'utiliser ?
 
 Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'année. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC mais ils ont apporté aussi un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données et de Postgresql. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités. 
 
-Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes PHP (ou autres) alors que par définition un ensemble (set) de base de données est extensible. Nous verrons comment Pomm tirer parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. 
+Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes PHP (ou autres) alors que par définition un ensemble (set) de base de données est extensible. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes "orientées objet" en SQL. 
 
 Un autre des problèmes des ORMs est lié à la couche d'abstraction: ils proposent un langage pseudo SQL orienté objet et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
 
@@ -26,7 +26,7 @@ Le présent article vous propose de créer une application en mode texte qui che
 Mise en place de l'application
 ------------------------------
 
-L'application suivante n'utilise pas de framework et est volontairement minimaliste. Il est bien sûr forement consillé d'en utiliser un, il existe à ce propos un adaptateur pour [Silex et Symfony](http://pomm.coolkeums.org/download). Ne vous étonnez donc pas de ne pas trouver de belles URL (routing), de contrôleurs encapsulés (et testables), de moteur de template (fort utile) et autres bonnes pratiques, cela va nous permettre de nous concentrer sur le sujet de cet article.
+L'application suivante n'utilise pas de framework et est volontairement minimaliste. Il est bien sûr forement consillé d'en utiliser un, il existe à ce propos un adaptateur pour [Silex et Symfony](http://pomm.coolkeums.org/download). Ne vous étonnez donc pas de ne pas trouver de belles URL (routing), de contrôleurs encapsulés (et testables), de moteur de template (fort utile) et autres bonnes pratiques, cela va forcément s'éloigner de ce à quoi pourrait ressembler une application respectueuse des préceptes RESTFULL mais cela va nous permettre de nous concentrer sur le sujet de cet article.
 
 Nous allons utliser [Composer](http://composer.org "composer c'est le bien") pour installer Pomm et instancier un auto-loading dans notre projet. Pour cela, il n'est pas utile de créer plus qu'un fichier `composer.json` comme suit dans un répertoire vierge :
 
@@ -153,7 +153,7 @@ Les utilisateurs d'ORMs ne seront pas non plus surpris d'apprendre que la classe
 Premiers pas
 ------------
 
-Pour notre première interface, nous allons afficher la liste des départements avec un lien sur chacun d'entre eux pour permettre d'afficher la liste des employés qui leur sont directement attachés. Créons le fichier index.php avec le code PHP suivant:
+Pour notre première interface, nous allons afficher la liste des employés. Créons le fichier index.php avec le code PHP suivant:
 
 ```php
 <?php //index.php
@@ -161,8 +161,8 @@ Pour notre première interface, nous allons afficher la liste des départements 
 // CONTROLLER
 $connection = require(__DIR__."/bootstrap.php");
  
-$departments = $connection
-    ->getMapFor('\ElCaro\Company\Department')
+$employees = $connection
+    ->getMapFor('\ElCaro\Company\Employee')
     ->findAll();
 
 // TEMPLATE
@@ -172,15 +172,15 @@ $departments = $connection
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   </head>
   <body>
-    <h1>El-Caro - Liste des départements</h1>
-<?php if ($departments): ?>
+    <h1>El-Caro - Workers list</h1>
+<?php if ($employees): ?>
     <ul>
-  <?php foreach($departments as $department): ?>
-      <li><a href="/list_empoyee.php?department_id=<?php echo $department["department_id"] ?>"><?php $department["name"] ?></a></li>
+  <?php foreach($employees as $employee): ?>
+      <li><a href="/show_employee.php?employee_id=<?php echo $employee["employee_id"] ?>"><?php echo $employee["first_name"]." ".$employee["last_name"] ?></a></li>
   <?php endforeach ?>
     </ul>
 <?php else: ?>
-    <p>No departments !?!? There must be a bug somewhere...</p>
+    <p>No employees !?!? There must be a bug somewhere...</p>
 <?php endif ?>
   </body>
 </html>
@@ -188,30 +188,126 @@ $departments = $connection
 
 Commentons le code ci dessus :
 
- 1. La connexion nous permet d'instancier les classes Map
- 2. La classe Map sait faire des requêtes qui ramènent des collections d'entités correspondantes.
+ 1. La connexion nous permet d'obtenir des instances de classes Map.
+ 2. La classe Map sait faire des requêtes qui ramènent des collections de leur entité correspondante.
  3. Ces collections sont accessibles via `foreach` et retournent leurs entités
- 4. Les valeurs internes des entités sont accessibles via la notation de tableau.
+ 4. Les valeurs internes des entités sont accessibles entre autres via la notation de tableau.
 
-Comment faire dans ces conditions pour surcharger nos entités ? Tout bonnement comme n'importe quelle entité. Si nous souhaitons par exemple afficher le nom des départements en minuscules commençant par une majuscule, il suffit de créer la méthode `getName()` dans la classe `Department` :
+L'utilisation de la notation de tableau est pratique dans les templates et elle équivaut complètement à l'utilisation d'accesseurs. Ainsi `$employee['first_name']` est équivalent à `$employee->getFirstName()`. Cela permet par exemple, si on souhaite formater les noms avec le prénom capitalisé et le nom en majuscule, de surcharger `getFirstName()` et `getLastName()` dans la classe `Employee` :
 
 ```php
-<?php //lib/ElCaro/Company/Department.php
+<?php // lib/ElCaro/Company/Employee.php
 
 namespace ElCaro\Company;
 
 use \Pomm\Object\BaseObject;
 use \Pomm\Exception\Exception;
 
-class Department extends BaseObject
+class Employee extends BaseObject
 {
-    public function getName()
+    public function getFirstName()
     {
-        return ucwords($this->get('name'));
+        return ucwords($this->get('first_name'));
+    }
+
+    public function getLastName()
+    {
+        return strtoupper($this->get('last_name'));
+    }
+
+    public function __toString()
+    {
+        return sprintf("%s %s", $this['first_name'], $this['last_name']);
     }
 }
 ```
 
-L'appel à `$department['name']` utilisera alors cette surcharge. Il est bien évidemment possible d'appeler directement les accesseurs `$department->getId()` fonctionnera tout comme `$department['id']`. Seul les accesseurs génériques `get()` et `set()` échappent aux surchargent pour permettre de manipuler les valeurs venant de la base ce qui est pratique pour faire des requêtes SQL par exemple.
+Seuls les accesseurs génériques `get()`, `set()`, `has()` et `clear()` ne peuvent être surchargés car ils sont utilisés pour accéder aux valeurs brutes de l'objet. Nous en aurions besoin ici si nous souhaitions par exemple implémenter une recherche par le prénom alors que la méthode `getFirstName()` ne nous retourne pas la valeur effectivement stockée en base. 
+
+Dans la vraie vie™, un tel exemple ne serait pas vraiment exploitable à cause du volume de données dès que le nombre d'employés dépasse quelque dizaines. Cela ne nous aurait pas coûté tellement plus cher de [les classer par ordre alphabétique](http://pomm.coolkeums.org/documentation/manual-1.1#findall) et de [paginer notre liste](http://pomm.coolkeums.org/documentation/manual-1.1#pagers) de résultats dans notre contrôleur.
+
+Entités élastiques
+------------------
+
+Intéressons nous maintenant à l'affichage des données d'un utilisateur :
+
+```php
+<?php // show_employee.php
+
+$connection = require(__DIR__."/bootstrap.php");
+
+// CONTROLLER
+
+if (!$employee = $connection
+    ->getMapFor('\ElCaro\Company\Employee')
+    ->findByPk(array('employee_id' => $_GET['employee_id'])))
+{
+    printf("No such user.");
+    exit;
+}
+// TEMPLATE
+?>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  </head>
+  <body>
+    <h1>El-Caro - <?php echo $employee ?> (<?php echo $employee["employee_id"] ?>)</h1>
+    <p><a href="/index.php">Back to the homepage</a>.</p>
+    <ul>
+      <li>Birth date: <?php echo $employee["birth_date"]->format("d/m/Y") ?>.</li>
+      <li>day salary indice: <?php printf("%05.2f", $employee["day_salary"]) ?>.</li>
+      <li>Status: <?php echo $employee["is_manager"] ? "manager" : "worker" ?>.</li>
+      <li>Department: <?php echo $employee["department_id"] ?>.</li>
+    </ul>
+  </body>
+</html>
+```
+
+Imaginons maintenant qu'en plus de la date de naissance, nous avions besoin d'avoir directement l'age de la personne. Il est bien sûr facile de créer un accesseur supplémentaire `getAge()` dans la classe `Employee` dans laquelle nous calculerions en PHP l'age à partir de la date de naissance mais pourquoi ne pas le demander directement à Postgresql en utilisant la fonction `age()` ? En interne, Pomm définit une méthode `getSelectFields()` pour faire ses propres requêtes. Par défaut, cette méthode retourne tous les champs de la table, mais il est possible de la surcharger pour en enlever ou en ajouter.
+
+```php
+<?php // lib/ElCaro/Company/EmployeeMap.php
+
+namespace ElCaro\Company;
+
+use ElCaro\Company\Base\EmployeeMap as BaseEmployeeMap;
+use ElCaro\Company\Employee;
+use \Pomm\Exception\Exception;
+use \Pomm\Query\Where;
+
+class EmployeeMap extends BaseEmployeeMap
+{
+    public function getSelectFields($alias = null)
+    {
+        $fields = parent::getSelectFields($alias);
+        $fields['age'] = 'age(birth_date)';
+
+        return $fields;
+    }
+}
+```
+
+Et ajoutons la ligne suivante dans la partie template de `show_employee.php` :
+
+    <li>Age: <?php echo $employee['age'] ?>.</li>
+
+En rafraîchissant la page, celle-ci affiche désormais quelque chose ressemblant à `Age: 27 years 11 mons 2 days.`. C'est la sortie brute de la commande `age()` de Postgresql, Pomm ne sachant comment interpréter cette sortie, la convertit au format String. Il est possible d'étendre la définition de notre entité en y ajoutant le type de cette nouvelle colonne virtuelle pour qu'elle soit prise en charge par le convertisseur quand elle existe :
+
+```php
+<?php // lib/ElCaro/Company/EmployeeMap.php
+// [...]
+
+    public function initialize()
+    {
+        parent::initialize();
+
+        $this->addVirtualField('age', 'interval');
+    }
+```
+
+Si vous rafraîchissez désormais la page, celle-ci présente une erreur, PHP ne sachant pas comment afficher une instance de la classe DateInterval, le convertisseur a bien fait son travail. Changer l'affichage de l'age par la ligne suivante :
+
+      <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
 
 

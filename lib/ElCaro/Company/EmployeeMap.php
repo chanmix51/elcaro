@@ -9,4 +9,18 @@ use \Pomm\Query\Where;
 
 class EmployeeMap extends BaseEmployeeMap
 {
+    public function initialize()
+    {
+        parent::initialize();
+
+        $this->addVirtualField('age', 'interval');
+    }
+
+    public function getSelectFields($alias = null)
+    {
+        $fields = parent::getSelectFields($alias);
+        $fields['age'] = 'age(birth_date)';
+
+        return $fields;
+    }
 }
