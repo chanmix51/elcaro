@@ -8,16 +8,16 @@ Pomm est un **gestionnaire de modèle objet** dédié au moteur de base de donn�
 
 C'est avant tout un **hydrateur** d'objets qui utilise un convertisseur entre PHP et Postgresql pour assurer qu'un booléen dans Postgres sera vu depuis PHP comme tel, de même pour les tableaux, le type clé -> valeur 'HStore', les types géométriques, XML, JSON etc.
 
-Cette fonctionnalité de conversion est très importante car le typage dans Postgresql est un élément incontournable de la définition du schéma par contrainte. La possibilité d'enrichir Postgresql avec nos propres types est prise en compte et nous verrons comment bénéficier des fonctionnalités "orienté objet" de Postgesql par ce biais.
+Cette fonctionnalité de conversion est très importante car le typage dans Postgresql est un élément incontournable de la définition du schéma par contrainte. La possibilité d'enrichir Postgresql avec des types personnalisés est prise en compte.
 
-C'est également un gestionnaire de modèle orienté objet car Pomm crée des classes de mapping qui lie des structures SQL avec des objets PHP. Nous verrons là encore les grosses différences entre Pomm et les ORMs classiques et comment utiliser la puissance du SQL de Postgres au service d'une petite application. 
+C'est également un gestionnaire de modèle orienté objet car Pomm crée des classes de mapping qui lient les structures SQL avec des objets PHP. Nous verrons là encore les grosses différences entre Pomm et les ORMs classiques et comment utiliser la puissance du SQL de Postgres au service d'une petite application. 
 
 En quoi Pomm est il différent d'un ORM et pourquoi l'utiliser ?
 ---------------------------------------------------------------
 
 Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'année. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC mais ils ont apporté aussi un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données en général et de Postgresql en particulier. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités au maximum. 
 
-Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes PHP (ou autres) alors que par définition un ensemble (set) de base de données est extensible. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes "orientées objet" en SQL. 
+Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes (PHP ou autres) alors que par définition, les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, que les opérations ensemblistes sont insensibles à la taille de ces tuples et que le système de projection (SELECT) a été conçu pour les façonner. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes "orientées objet" en SQL. 
 
 Un autre des problèmes des ORMs est lié à la couche d'abstraction: ils proposent un langage pseudo SQL orienté objet et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
 
@@ -28,7 +28,7 @@ Mise en place de l'application
 
 L'application suivante n'utilise pas de framework et est volontairement minimaliste. Il est bien sûr fortement conseillé d'en utiliser un, il existe à ce propos un adaptateur pour [Silex et Symfony](http://pomm.coolkeums.org/download). Ne vous étonnez donc pas de ne pas trouver de belles URL (routing), de contrôleurs encapsulés (et testables), de moteur de template (fort utile) et autres bonnes pratiques, cela va forcément s'éloigner de ce à quoi pourrait ressembler une application respectueuse des préceptes RESTFULL mais cela va nous permettre de nous concentrer sur le sujet de cet article.
 
-Nous allons utliser [Composer](http://composer.org "composer c'est le bien") pour installer Pomm et instancier un auto-loading dans notre projet. Pour cela, il n'est pas utile de créer plus qu'un fichier `composer.json` comme suit dans un répertoire vierge :
+Nous allons utliser [Composer](http://composer.org "composer, c'est le bien.") pour installer Pomm et instancier un auto-loading dans notre projet. Pour cela, il n'est pas utile de créer plus qu'un fichier `composer.json` comme suit dans un répertoire vierge :
 
 ```json
 {
@@ -45,7 +45,7 @@ Reste à appeler le script `composer.phar install` pour que composer installe Po
 Bienvenue dans la société El-Caro Corp.
 ---------------------------------------
 
-Ce tutoriel vous propose de créer une application simpliste de gestion des salariés de la société informatique « El-Caro Corporation ». Cette société est divisée en départements hiérarchisés et chaque employé appartient à un département. La structure de la base de données est la suivante :
+Ce tutoriel vous propose de créer une application simpliste de gestion des salariés de la société informatique « El-Caro Corporation ». Cette société est divisée en départements hiérarchisés et chaque employé appartient à un département lui même pouvant être fils d'un autre service. La structure de la base de données est la suivante :
 
 ![Alt text](elcaro.db.png "Database Structure")
 
@@ -58,7 +58,7 @@ el-caro$> SHOW search_path;
 company, public
 ```
 
-La commande `SHOW` doit nous retourner `company, public` signe que le client Postgres va d'abord chercher les objets par défaut dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Une fois cela fait, implémentons la structure :
+La commande `SHOW` doit nous retourner `company, public` signe que le client Postgres va d'abord chercher les objets par défaut dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Un des avantages d'utiliser un schéma est que si l'on souhaite "passer l'éponge", il suffit de lancer un `DELETE SCHEMA company CASCADE` et de recommencer. Une fois le schéma créé, implémentons la structure :
 
     elcaro$> CREATE TABLE department (
         department_id       serial      PRIMARY KEY,
@@ -66,7 +66,7 @@ La commande `SHOW` doit nous retourner `company, public` signe que le client Pos
         parent_id           integer     REFERENCES department (department_id)
         );
 
-Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto-incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons que le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département père. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à exister au préalable dans la table.
+Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto-incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons que le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département racine. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à exister au préalable dans la table.
 
 ```sql
 el-caro$> CREATE TABLE employee (
@@ -82,12 +82,12 @@ el-caro$> CREATE TABLE employee (
 
 Nous voyons ici que la structure d'un employé est fortement contrainte. Une vérification -- pour l'exemple -- d'age est faite pour vérifier que la date de naissance entrée ne corresponde pas à un mineur. Dans le cas d'un employé, l'appartenance à un département est rendue obligatoire par la contrainte `NOT NULL` sur le champs de clé étrangère `department_id` vers la table `department`.
 
-Un jeu de données est disponible dans [ce Gist](https://gist.github.com/raw/4664191/c1fbaba2c82b4d2950709ec2c208852894d16152/structure.sql [wget me]).
+Un jeu de données est disponible dans [ce Gist](https://gist.github.com/raw/4664191/c1fbaba2c82b4d2950709ec2c208852894d16152/structure.sql "wget me").
 
 Génération du modèle PHP
 ------------------------
 
-À partir de ce modèle de base de données, Pomm va construire les classes qui correspondent aux structures des tables pour nous permettre de nous affranchir des traitements fastidieux de PDO. Dans un premier temps, nous créons un fichier appelé `bootstrap.php` qui sera appelé par nos scripts et dont le but est d'initialiser la base de données.
+À partir de cette structure de base de données, Pomm sait construire les classes qui correspondent aux tables pour nous permettre de nous affranchir des traitements fastidieux de PDO. Dans un premier temps, nous créons un fichier appelé `bootstrap.php` qui sera inclus par nos scripts et dont le but est d'initialiser l'autoloading et la base de données.
 
 ```php
 <?php // bootstrap.php
@@ -124,7 +124,7 @@ foreach ( $scan->getOutputStack() as $line )
 }
 ```
 
-Ce script utilise un des outils fournis avec Pomm: [le scanner de schéma](http://pomm.coolkeums.org/documentation/manual-1.1#map-generation-tools [documentation]). Cet outil utilise l'inspecteur de base de données de Pomm pour générer des classes de mapping liées aux tructures stockées en base. Dans le cas présent, nous lui demandons de scanner le schéma `company` et de générer les fichiers dans le sous répertoire `lib`, là où nous avons fait pointer l'auto-loader par défaut dans le fichier `bootstrap.php`. Un appel à ce script va nous générer la structure de fichiers suivante ;
+Ce script utilise un des outils fournis avec Pomm: [le scanner de schéma](http://pomm.coolkeums.org/documentation/manual-1.1#map-generation-tools "documentation"). Cet outil utilise l'inspecteur de base de données de Pomm pour générer des classes de mapping liées aux tructures stockées en base. Dans le cas présent, nous lui demandons de scanner le schéma `company` et de générer les fichiers dans le sous répertoire `lib`, là où nous avons fait pointer l'auto-loader par défaut dans le fichier `bootstrap.php`. Un appel à ce script va nous générer la structure de fichiers suivante ;
 
     lib/
     └── ElCaro
@@ -143,7 +143,7 @@ Cette architecture ne choquera pas les utilisateurs habitués à utiliser des OR
  * Une classe portant le même nom mais affublé du suffix `Map`
  * La même classe dans le sous namespace `Base`.
 
-Les classes du sous namespace `Base` contiennent la définition déduite depuis la structure de la base de données. Ces fichiers seront écrasés à chaque introspection en cas d'évolution de la structure de la base, il serait donc malvenu qu'elle contiennent du code que nous aurions pu placer là. C'est pour cela que la classe `Map` hérite de sa consœur dans `Base`. Vous pouvez y placer votre code, cette classe ne sera pas écrasée. 
+Les classes du sous namespace `Base` contiennent la définition déduite depuis la structure de la base de données. Ces fichiers seront écrasés à chaque introspection en cas d'évolution de la structure de la base, il serait donc malvenu qu'elle contienne du code que nous aurions pu placer là. C'est pour cela que la classe `Map` hérite de sa consœur dans `Base`. Vous pouvez y placer votre code, cette classe ne sera pas écrasée. 
 
 Les utilisateurs d'ORMs ne seront pas non plus surpris d'apprendre que la classe Map est l'outil qui s'occupera de gérer la vie leur entité correspondante avec la base de données, à savoir :
 
@@ -190,10 +190,10 @@ Commentons le code ci dessus :
 
  1. La connexion nous permet d'obtenir des instances de classes Map.
  2. La classe Map sait faire des requêtes qui ramènent des collections de leur entité correspondante.
- 3. Ces collections sont accessibles via `foreach` et retournent leurs entités
+ 3. Ces collections sont accessibles via `foreach` et retournent leurs entités.
  4. Les valeurs internes des entités sont accessibles entre autres via la notation de tableau.
 
-L'utilisation de la notation de tableau est pratique dans les templates et elle équivaut complètement à l'utilisation d'accesseurs. Ainsi `$employee['first_name']` est équivalent à `$employee->getFirstName()`. Cela permet par exemple, si on souhaite formater les noms avec le prénom capitalisé et le nom en majuscule, de surcharger `getFirstName()` et `getLastName()` dans la classe `Employee` :
+L'utilisation de la notation de tableau est pratique dans les templates et elle équivaut complètement à l'utilisation d'accesseurs. Ainsi `$employee['first_name']` est équivalent à `$employee->getFirstName()`. Cela permet par exemple, si on souhaite formater le prénom capitalisé et le nom en majuscule, de juste avoir à surcharger `getFirstName()` et `getLastName()` dans la classe `Employee` :
 
 ```php
 <?php // lib/ElCaro/Company/Employee.php
@@ -224,7 +224,7 @@ class Employee extends BaseObject
 
 Seuls les accesseurs génériques `get()`, `set()`, `has()` et `clear()` ne peuvent être surchargés car ils sont utilisés pour accéder aux valeurs brutes de l'objet. Nous en aurions besoin ici si nous souhaitions par exemple implémenter une recherche par le prénom alors que la méthode `getFirstName()` ne nous retourne pas la valeur effectivement stockée en base. 
 
-Dans la vraie vie™, un tel exemple ne serait pas vraiment exploitable à cause du volume de données dès que le nombre d'employés dépasse quelque dizaines. Cela ne nous aurait pas coûté tellement plus cher de [les classer par ordre alphabétique](http://pomm.coolkeums.org/documentation/manual-1.1#findall) et de [paginer notre liste](http://pomm.coolkeums.org/documentation/manual-1.1#pagers) de résultats dans notre contrôleur.
+Dans la vraie vie™, un tel exemple ne serait pas vraiment exploitable à cause du volume de données dès que le nombre d'employés dépasse quelque dizaines. Cela ne nous aurait pas coûté tellement plus cher de [les classer par ordre alphabétique](http://pomm.coolkeums.org/documentation/manual-1.1#findall) et de [paginer notre liste](http://pomm.coolkeums.org/documentation/manual-1.1#pagers) de résultats dans le contrôleur.
 
 Entités élastiques
 ------------------
@@ -264,7 +264,11 @@ if (!$employee = $connection
 </html>
 ```
 
-Imaginons maintenant qu'en plus de la date de naissance, nous avions besoin d'avoir directement l'age de la personne. Il est bien sûr facile de créer un accesseur supplémentaire `getAge()` dans la classe `Employee` dans laquelle nous calculerions en PHP l'age à partir de la date de naissance mais pourquoi ne pas le demander directement à Postgresql en utilisant la fonction `age()` ? En interne, Pomm définit une méthode `getSelectFields()` pour faire ses propres requêtes. Par défaut, cette méthode retourne tous les champs de la table, mais il est possible de la surcharger pour en enlever ou en ajouter.
+Là encore, nous pouvons voir que le convertisseur a fait son travail, la date de naissance est un objet PHP `DateTime`, le champs `is_manager` est un booléen et on peut formater `day_salary` convenablement.
+
+Imaginons maintenant qu'en plus de la date de naissance, nous avions besoin d'avoir directement l'age de la personne. Il est bien sûr facile de créer un accesseur supplémentaire `getAge()` dans la classe `Employee` dans laquelle nous calculerions en PHP l'age à partir de la date de naissance mais pourquoi ne pas le demander directement à Postgresql en utilisant la fonction `age()` ? 
+
+Il faut savoir que Pomm n'utilise jamais l'alias `*`. Dans les classes Map, Pomm définit une méthode `getSelectFields()` pour faire ses propres requêtes. Par défaut, cette méthode retourne tous les champs de la table, mais il est possible de la surcharger pour en enlever ou en ajouter. En d'autres termes, cette méthode définit la projection de l'objet en base de données vers l'objet entité PHP.
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -305,11 +309,11 @@ En rafraîchissant la page, celle-ci affiche désormais quelque chose ressemblan
     }
 ```
 
-Si vous rafraîchissez désormais la page, celle-ci présente une erreur, PHP ne sachant pas comment afficher une instance de la classe DateInterval, le convertisseur a bien fait son travail. Changez l'affichage de l'age par la ligne suivante :
+Si vous rafraîchissez désormais la page, celle-ci présente une erreur comme quoi PHP ne sait pas comment afficher une instance de la classe PHP `DateInterval`, le convertisseur a bien fait son travail. Changez l'affichage de l'age par la ligne suivante :
 
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
 
-Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée n'est pas très solide car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Cela peut poser des problèmes lors de requêtes complexes où ce champs peut apparaitre dans plusieurs ensemble. La laisser ainsi occasionnerait des erreurs SQL de type "champs ambigu". Pour prévenir cela, corrigeons la méthode comme suit :
+Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée est génératrice de problème car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Cela peut -- et va -- poser des problèmes lors de requêtes complexes où ce champs peut apparaitre dans plusieurs ensembles. La laisser ainsi occasionnerait des erreurs SQL de type "champs ambigu" assez délicats à déboguer. Pour prévenir cela, corrigeons la méthode comme suit :
 
 ```php
     public function getSelectFields($alias = null)
@@ -322,10 +326,10 @@ Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que no
     }
 ```
 
-Requêtes SQL
-------------
+Requêtes SQL personnalisées
+---------------------------
 
-Si désormais, nous souhaitons afficher le nom du service au lieu du department_id, appeler `findByPk()` est insuffisant, nous allons devoir créer une jointure pour ramener cette information. Créons une méthode dans notre classe de modèle dont le but sera de ramener un employé avec des informations sur son service. On peut bien sûr coucher immédiatement la requête nécessaire (Le [NATURAL JOIN](http://www.postgresql.org/docs/8.4/static/queries-table-expressions.html) de postgres permet de faire une jointure sur deux ensembles en prenant les champs homonymes) :
+Si désormais, nous souhaitons afficher le nom du service au lieu du `department_id`, appeler `findByPk()` est insuffisant, nous allons devoir créer une jointure pour ramener cette information. Créons une méthode dans notre classe de modèle dont le but sera de ramener un employé avec des informations sur son service. On peut coucher immédiatement la requête nécessaire (Le [NATURAL JOIN](http://www.postgresql.org/docs/8.4/static/queries-table-expressions.html "documentation postgresql") de postgres permet de faire une jointure sur deux ensembles en prenant les champs homonymes) :
 
 ```sql
 SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id = ?
@@ -333,7 +337,7 @@ SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id
 
 Cependant, la requête sous cette forme présente des inconvénients :
 
- * elle ne prend pas `getSelectFields()` en compte et ne retournera pas `age`.
+ * elle n'utilise pas la méthode de projection `getSelectFields()` et n'affichera pas le champs `age`.
  * indiquer le nom des tables "en dur" peut nous poser des problèmes d'évolutivité.
 
 Les classes Map de Pomm proposent pour cela des méthodes pour avoir ces informations de façon dynamique. Idéalement, notre requête pourrait être vue sous cette forme:
@@ -368,8 +372,7 @@ Ainsi équipé, il est facile de se concentrer sur ce que font les requêtes plu
         $department_map = $this->connection->getMapFor('\ElCaro\Company\Department');
         $sql = <<<SQL
 SELECT
-  %s,
-  dept.name AS department_name
+  %s, dept.name AS department_name
 FROM
   %s emp
     NATURAL JOIN %s dept
@@ -393,7 +396,7 @@ Et dans le template correspondant :
       <li>Department: <?php echo $employee["department_name"] ?>.</li>
 ```
 
-La possibilité de faire des requêtes SQL depuis les classes Map est une fonctionnalité extrêmement puissante car elle permet d'utiliser tous les mécanismes SQL de Postgresql. Les départements sont une structure arborescente, nous pouvons demander à Postgresql de ramener sous forme de tableaux l'ensemble des services auxquels chaque utilisateur appartient. Pour cela, nous utilisons une requête récursive avec un agrégateur de tableaux et déclarons notre colonne comme un tableau de chaîne de caractères :
+La possibilité de faire des requêtes SQL depuis les classes Map est une fonctionnalité extrêmement puissante car elle permet d'utiliser tous les mécanismes SQL de Postgresql. Par exemple, les départements sont une structure arborescente, nous pouvons demander à Postgresql de ramener sous forme de tableaux l'ensemble des services auxquels chaque utilisateur appartient. Pour cela, nous utilisons une requête récursive avec un agrégateur de tableaux et déclarons notre colonne comme un tableau de chaîne de caractères :
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -417,8 +420,7 @@ WITH RECURSIVE
       SELECT %s FROM depts parent JOIN %s d ON parent.parent_id = d.department_id
   )
 SELECT
-  %s,
-  array_agg(depts.name) AS department_names
+  %s, array_agg(depts.name) AS department_names
 FROM
   %s emp,
   depts
@@ -426,7 +428,6 @@ WHERE
     emp.employee_id = ?
 GROUP BY
   %s
-;
 SQL;
 
         $sql = sprintf($sql,
