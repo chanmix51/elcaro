@@ -309,12 +309,23 @@ Si vous rafraîchissez désormais la page, celle-ci présente une erreur, PHP ne
 
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
 
-Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée n'est pas très portable car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Nous verrons en quoi cela pose problème et comment "bien faire"™. 
+Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée n'est pas très solide car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Cela peut poser des problèmes lors de requêtes complexes où ce champs peut apparaitre dans plusieurs ensemble. La laisser ainsi occasionnerait des erreurs SQL de type "champs ambigu". Pour prévenir cela, corrigeons la méthode comme suit :
+
+```php
+    public function getSelectFields($alias = null)
+    {
+        $fields = parent::getSelectFields($alias);
+        $alias = is_null($alias) ? "" : sprintf("%s.", $alias);
+        $fields['age'] = sprintf('age(%s"birth_date")', $alias);
+
+        return $fields;
+    }
+```
 
 Requêtes SQL
 ------------
 
-Si désormais, nous souhaitons afficher le nom du service au lieu du department_id, nous allons devoir créer une jointure pour ramener cette information. Créons une méthode dans notre classe de modèle dont le but sera de ramener un employé avec des informations sur son service. On peut bien sûr coucher immédiatement la requête nécessaire :
+Si désormais, nous souhaitons afficher le nom du service au lieu du department_id, appeler `findByPk()` est insuffisant, nous allons devoir créer une jointure pour ramener cette information. Créons une méthode dans notre classe de modèle dont le but sera de ramener un employé avec des informations sur son service. On peut bien sûr coucher immédiatement la requête nécessaire (Le [NATURAL JOIN](http://www.postgresql.org/docs/8.4/static/queries-table-expressions.html) de postgres permet de faire une jointure sur deux ensembles en prenant les champs homonymes) :
 
 ```sql
 SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id = ?
@@ -325,7 +336,7 @@ Cependant, la requête sous cette forme présente des inconvénients :
  * elle ne prend pas `getSelectFields()` en compte et ne retournera pas `age`.
  * indiquer le nom des tables "en dur" peut nous poser des problèmes d'évolutivité.
 
-Les classes Map de Pomm proposent ainsi des méthodes pour avoir ces informations de façon dynamique. Idéalement, notre requête pourrait être vue sous cette forme:
+Les classes Map de Pomm proposent pour cela des méthodes pour avoir ces informations de façon dynamique. Idéalement, notre requête pourrait être vue sous cette forme:
 
 ```sql
 SELECT %A, dept.name FROM %B NATURAL JOIN %C WHERE employee_id = ?
@@ -335,7 +346,7 @@ SELECT %A, dept.name FROM %B NATURAL JOIN %C WHERE employee_id = ?
  * %B est la table des employés.
  * %C est la table des départements.
 
-B et C sont facilement remplacés grâce à la méthode `getTable()` de chaque classe Map. Nous savons que l'on peut obtenir la liste des colonnes a ramener avec la méthode `getSelectFields()` mais cette méthode retourne un tableau associatif dont la clé est l'alias du champs et la valeur hé bien ... sa valeur. Il faut donc formater ce tableau en une liste de champs. Les classes Map proposent pour cela des méthodes dédiées : [les formateurs](http://pomm.coolkeums.org/documentation/manual-1.1#fields-formatters).
+B et C sont facilement remplacés grâce à la méthode `getTableName()` de chaque classe Map. Nous savons que l'on peut obtenir la liste des colonnes a ramener avec la méthode `getSelectFields()` mais cette méthode retourne un tableau associatif dont la clé est l'alias du champs et la valeur hé bien ... sa valeur. Il faut donc formater ce tableau en une liste de champs. Les classes Map proposent pour cela des méthodes dédiées : [les formateurs](http://pomm.coolkeums.org/documentation/manual-1.1#fields-formatters).
 
  * `formatFields(methode, alias)`
  * `formatFieldsWithAlias(methode, alias)`
@@ -347,9 +358,100 @@ $this->formatFieldsWithAlias('getSelectFields', 'plop');
 // "plop.employee_id" AS "employee_id", "plop.first_name" AS "first_name", ...
 ```
 
-Ainsi équipé, l'écriture de requêtes devient facile :
+Ainsi équipé, il est facile de se concentrer sur ce que font les requêtes plutôt que sur la syntaxe elle même :
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
 // [...]
+    public function getEmployeeWithDepartment($employee_id)
+    {
+        $department_map = $this->connection->getMapFor('\ElCaro\Company\Department');
+        $sql = <<<SQL
+SELECT
+  %s,
+  dept.name AS department_name
+FROM
+  %s emp
+    NATURAL JOIN %s dept
+WHERE
+    emp.employee_id = ?
+SQL;
+
+        $sql = sprintf($sql,
+            $this->formatFieldsWithAlias('getSelectFields', 'emp'),
+            $this->getTableName(),
+            $department_map->getTableName()
+        );
+
+        return $this->query($sql, array($employee_id))->current();
+    }
+```
+
+Et dans le template correspondant :
+
+```php
+      <li>Department: <?php echo $employee["department_name"] ?>.</li>
+```
+
+La possibilité de faire des requêtes SQL depuis les classes Map est une fonctionnalité extrêmement puissante car elle permet d'utiliser tous les mécanismes SQL de Postgresql. Les départements sont une structure arborescente, nous pouvons demander à Postgresql de ramener sous forme de tableaux l'ensemble des services auxquels chaque utilisateur appartient. Pour cela, nous utilisons une requête récursive avec un agrégateur de tableaux et déclarons notre colonne comme un tableau de chaîne de caractères :
+
+```php
+<?php // lib/ElCaro/Company/EmployeeMap.php
+// [...]
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->addVirtualField('age', 'interval');
+        $this->addVirtualField('department_names', 'varchar[]');
+    }
+
+    public function getEmployeeWithDepartment($employee_id)
+    {
+        $department_map = $this->connection->getMapFor('\ElCaro\Company\Department');
+        $sql = <<<SQL
+WITH RECURSIVE
+  depts  (department_id, name, parent_id) AS (
+      SELECT %s FROM %s NATURAL JOIN %s emp WHERE emp.employee_id = ?
+    UNION ALL
+      SELECT %s FROM depts parent JOIN %s d ON parent.parent_id = d.department_id
+  )
+SELECT
+  %s,
+  array_agg(depts.name) AS department_names
+FROM
+  %s emp,
+  depts
+WHERE
+    emp.employee_id = ?
+GROUP BY
+  %s
+;
+SQL;
+
+        $sql = sprintf($sql,
+            $department_map->formatFields('getSelectFields'),
+            $department_map->getTableName(),
+            $this->getTableName(),
+            $department_map->formatFields('getSelectFields', 'd'),
+            $department_map->getTableName(),
+            $this->formatFieldsWithAlias('getSelectFields', 'emp'),
+            $this->getTableName(),
+            $this->formatFields('getGroupByFields', 'emp')
+        );
+
+        return $this->query($sql, array($employee_id, $employee_id))->current();
+    }
+```
+
+Et dans le template :
+
+```php
+      <li>Departments: <?php echo join(' &gt; ', $employee["department_names"]) ?>.</li>
+```
+
+
+
+
+
 

@@ -26,7 +26,7 @@ if (!$employee = $connection
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
       <li>day salary indice: <?php printf("%05.2f", $employee["day_salary"]) ?>.</li>
       <li>Status: <?php echo $employee["is_manager"] ? "manager" : "worker" ?>.</li>
-      <li>Department: <?php echo $employee["department_name"] ?>.</li>
+      <li>Departments: <?php echo join(' &gt; ', $employee["department_names"]) ?>.</li>
     </ul>
   </body>
 </html>
