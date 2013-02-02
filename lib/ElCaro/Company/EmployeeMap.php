@@ -12,7 +12,6 @@ class EmployeeMap extends BaseEmployeeMap
     public function initialize()
     {
         parent::initialize();
-
         $this->addVirtualField('age', 'interval');
     }
 

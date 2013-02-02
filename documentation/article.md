@@ -15,18 +15,18 @@ C'est également un gestionnaire de modèle orienté objet car Pomm crée des cl
 En quoi Pomm est il différent d'un ORM et pourquoi l'utiliser ?
 ---------------------------------------------------------------
 
-Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'année. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC mais ils ont apporté aussi un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données et de Postgresql. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités. 
+Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'année. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC mais ils ont apporté aussi un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données en général et de Postgresql en particulier. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités au maximum. 
 
 Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes PHP (ou autres) alors que par définition un ensemble (set) de base de données est extensible. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes "orientées objet" en SQL. 
 
 Un autre des problèmes des ORMs est lié à la couche d'abstraction: ils proposent un langage pseudo SQL orienté objet et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
 
-Le présent article vous propose de créer une application en mode texte qui cherche et affiche des informations sur les employés de la société El-Caro Corporation.
+Le présent article vous propose de créer une application web qui cherche et affiche des informations sur les employés de la société El-Caro Corporation.
 
 Mise en place de l'application
 ------------------------------
 
-L'application suivante n'utilise pas de framework et est volontairement minimaliste. Il est bien sûr forement consillé d'en utiliser un, il existe à ce propos un adaptateur pour [Silex et Symfony](http://pomm.coolkeums.org/download). Ne vous étonnez donc pas de ne pas trouver de belles URL (routing), de contrôleurs encapsulés (et testables), de moteur de template (fort utile) et autres bonnes pratiques, cela va forcément s'éloigner de ce à quoi pourrait ressembler une application respectueuse des préceptes RESTFULL mais cela va nous permettre de nous concentrer sur le sujet de cet article.
+L'application suivante n'utilise pas de framework et est volontairement minimaliste. Il est bien sûr fortement conseillé d'en utiliser un, il existe à ce propos un adaptateur pour [Silex et Symfony](http://pomm.coolkeums.org/download). Ne vous étonnez donc pas de ne pas trouver de belles URL (routing), de contrôleurs encapsulés (et testables), de moteur de template (fort utile) et autres bonnes pratiques, cela va forcément s'éloigner de ce à quoi pourrait ressembler une application respectueuse des préceptes RESTFULL mais cela va nous permettre de nous concentrer sur le sujet de cet article.
 
 Nous allons utliser [Composer](http://composer.org "composer c'est le bien") pour installer Pomm et instancier un auto-loading dans notre projet. Pour cela, il n'est pas utile de créer plus qu'un fichier `composer.json` comme suit dans un répertoire vierge :
 
@@ -124,7 +124,7 @@ foreach ( $scan->getOutputStack() as $line )
 }
 ```
 
-Ce script utilise un des outils fournis avec Pomm: [le scanner de schémas](http://pomm.coolkeums.org/documentation/manual-1.1#map-generation-tools [documentation]). Cet outil utilise l'inspecteur de base de données de Pomm pour générer des classes de mapping liées aux tructures stockées en base. Dans le cas présent, nous lui demandons de scanner le schéma `company` et de générer les fichiers dans le sous répertoire `lib`, là où nous avons fait pointer l'auto-loader par défaut dans le fichier `bootstrap.php`. Un appel à ce script va nous générer la structure de fichiers suivante ;
+Ce script utilise un des outils fournis avec Pomm: [le scanner de schéma](http://pomm.coolkeums.org/documentation/manual-1.1#map-generation-tools [documentation]). Cet outil utilise l'inspecteur de base de données de Pomm pour générer des classes de mapping liées aux tructures stockées en base. Dans le cas présent, nous lui demandons de scanner le schéma `company` et de générer les fichiers dans le sous répertoire `lib`, là où nous avons fait pointer l'auto-loader par défaut dans le fichier `bootstrap.php`. Un appel à ce script va nous générer la structure de fichiers suivante ;
 
     lib/
     └── ElCaro
@@ -301,13 +301,12 @@ En rafraîchissant la page, celle-ci affiche désormais quelque chose ressemblan
     public function initialize()
     {
         parent::initialize();
-
         $this->addVirtualField('age', 'interval');
     }
 ```
 
-Si vous rafraîchissez désormais la page, celle-ci présente une erreur, PHP ne sachant pas comment afficher une instance de la classe DateInterval, le convertisseur a bien fait son travail. Changer l'affichage de l'age par la ligne suivante :
+Si vous rafraîchissez désormais la page, celle-ci présente une erreur, PHP ne sachant pas comment afficher une instance de la classe DateInterval, le convertisseur a bien fait son travail. Changez l'affichage de l'age par la ligne suivante :
 
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
 
-
+Requêtes orientées objet
