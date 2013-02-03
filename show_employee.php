@@ -26,7 +26,9 @@ if (!$employee = $connection
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
       <li>day salary indice: <?php printf("%05.2f", $employee["day_salary"]) ?>.</li>
       <li>Status: <?php echo $employee["is_manager"] ? "manager" : "worker" ?>.</li>
-      <li>Departments: <?php echo join(' &gt; ', $employee["department_names"]) ?>.</li>
+      <li>Departments: <?php echo join(' &gt; ', array_map(function($dept) {
+          return sprintf('<a href="/show_department.php?department_id=%d" title="dept id = [%02d]">%s</a>', $dept["department_id"], $dept['department_id'], $dept["name"]); 
+      }, $employee["departments"])) ?>.</li>
     </ul>
   </body>
 </html>

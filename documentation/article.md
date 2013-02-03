@@ -451,8 +451,86 @@ Et dans le template :
       <li>Departments: <?php echo join(' &gt; ', $employee["department_names"]) ?>.</li>
 ```
 
+La requête ci dessus, utilise la clause SQL `WITH` qui permet de créer des ensembles nommés et de les rappeler. Cela évite de faire des sub-select. Le premier ensemble aliasé `depts` est la clause récursive. Elle possède un ensemble de départ -- le département direct de l'employé -- uni à une requête récursive qui remonte l'arbre jusqu'à ce que ça ne soit plus possible. L'ensemble `depts` va donc contenir tous les départements de l'employé. La requête finale va tout simplement faire un CROSS JOIN entre les informations de l'employé et l'aggrégat en tableaux du nom de ses départements.
 
+Requêtes orientées objet
+------------------------
 
+Afficher l'arbre des départements de chaque utilisateur est une bonne chose mais cela serait plus intéressant si on pouvait avoir un lien sur chaque département qui mènerait à la fiche du département contenant tous ses employés. Dans l'état actuel de la requête, on ne ramène que les noms des départements, il nous faudrait également leurs identifiants. On peut toujours ajouter une colonne contenant un tableau d'identifiant mais cela n'est pas très pratique. 
 
+Postgresql propose une fonctionnalité intéressante : lorsque vous déclarez une table, Postgesql va automatiquement créer le type composite correspondant. C'est à dire que le type `company.department` existe et que vous pouvez faire des requêtes de ce type directement :
 
+```sql
+elcaro$> SELECT department FROM department;
+┌─────────────────────────────┐
+│         department          │
+├─────────────────────────────┤
+│ (1,"el caro corp.",)        │
+│ (2,siège,1)                 │
+│ (3,direction,2)             │
+│ (4,comptabilité,1)          │
+│ (5,"direction technique",3) │
+│ (6,"hotline niveau II",5)   │
+│ (7,"datacenter skynet",1)   │
+│ (8,"technique & réseau",7)  │
+│ (9,"Hotline niveau I",7)    │
+│ (10,Direction,7)            │
+└─────────────────────────────┘
+(10 rows)
+```
 
+Le résultat de la requête ci dessus ne possède **qu'une seule colonne** de type `department`. Ce que l'on appelle pompeusement *requête orientée objet* en Postgresql n'est que le fait de manipuler des tuples comme des valeurs mais cela est déjà extrêmement puissant car si on modifie la ligne suivante dans la requête SQL vue plus haut:
+
+```sql
+...
+SELECT
+  %s, array_agg(depts) AS departments
+FROM
+  %s emp,
+  depts
+...
+```
+
+Dès lors, la colonne `departments` contiendra un tableau d'entités `department`. Il convient de changer la ligne correspondante dans le template pour afficher les liens :
+
+```php
+      <li>Departments: <?php echo join(' &gt; ', array_map(function($dept) {
+          return sprintf('<a href="/show_department.php?department_id=%d">%s</a>', $dept["department_id"], $dept["name"]); 
+      }, $employee["departments"])) ?>.</li>
+```
+
+Mais cela ne suffit pas. PHP va se plaindre que l'argument passé à `array_map` n'est pas un tableau et il aura raison. N'ayant pas déclaré la colonne `departments` de la classe `Employee`, Pomm va juste y placer la chaîne de caractères renvoyée par Postgresql. Il faut donc renseigner le convertisseur que la colonne `departments` contient un tableau de type `department`. Seul souci : Pomm ne charge pas par défaut de convertisseur pour ce type de données. Nous allons donc enregistrer ce convertisseur auprès de l'instance de base de données dans le fichier `bootstrap.php`:
+
+```php
+<?php // bootstrap.php
+
+$loader = require __DIR__."/vendor/autoload.php";
+$loader->add(null, __DIR__."/lib");
+
+$database = new Pomm\Connection\Database(array('dsn' => 'pgsql://greg/greg', 'name' => 'el_caro'));
+$database->registerConverter(
+    'Department', 
+    new \Pomm\Converter\PgEntity($database->getConnection()->getMapFor('\ElCaro\Company\Department')), 
+    array('company.department'
+    ));
+
+return $database->getConnection();
+```
+
+Nous déclarons un nouveau convertisseur appelé `Department` qui associe le(s) type(s) Postgres `company.department` à l'instance de convertisseur `PgEntity`. Reste à utiliser ce convertisseur dans la colonne virtuelle `departments` de chaque `Employee`:
+
+```php
+<?php // lib/ElCaro/Company/EmployeeMap.php
+// [...]
+
+class EmployeeMap extends BaseEmployeeMap
+{
+    public function initialize()
+    {
+        parent::initialize();
+        $this->addVirtualField('age', 'interval');
+        $this->addVirtualField('departments', 'company.department[]');
+    }
+```
+
+![Alt text](department.png "Department tree")

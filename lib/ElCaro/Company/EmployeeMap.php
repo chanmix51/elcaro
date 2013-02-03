@@ -1,4 +1,4 @@
-<?php
+<?php // lib/ElCaro/Company/EmployeeMap.php
 
 namespace ElCaro\Company;
 
@@ -13,7 +13,7 @@ class EmployeeMap extends BaseEmployeeMap
     {
         parent::initialize();
         $this->addVirtualField('age', 'interval');
-        $this->addVirtualField('department_names', 'varchar[]');
+        $this->addVirtualField('departments', 'company.department[]');
     }
 
     public function getSelectFields($alias = null)
@@ -37,7 +37,7 @@ WITH RECURSIVE
   )
 SELECT
   %s,
-  array_agg(depts.name) AS department_names
+  array_agg(depts) AS departments
 FROM
   %s emp,
   depts
