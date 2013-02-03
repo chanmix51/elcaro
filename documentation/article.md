@@ -460,24 +460,22 @@ Afficher l'arbre des départements de chaque utilisateur est une bonne chose mai
 
 Postgresql propose une fonctionnalité intéressante : lorsque vous déclarez une table, Postgesql va automatiquement créer le type composite correspondant. C'est à dire que le type `company.department` existe et que vous pouvez faire des requêtes de ce type directement :
 
-```sql
-elcaro$> SELECT department FROM department;
-┌─────────────────────────────┐
-│         department          │
-├─────────────────────────────┤
-│ (1,"el caro corp.",)        │
-│ (2,siège,1)                 │
-│ (3,direction,2)             │
-│ (4,comptabilité,1)          │
-│ (5,"direction technique",3) │
-│ (6,"hotline niveau II",5)   │
-│ (7,"datacenter skynet",1)   │
-│ (8,"technique & réseau",7)  │
-│ (9,"Hotline niveau I",7)    │
-│ (10,Direction,7)            │
-└─────────────────────────────┘
-(10 rows)
-```
+    elcaro$> SELECT department FROM department;
+    ┌─────────────────────────────┐
+    │         department          │
+    ├─────────────────────────────┤
+    │ (1,"el caro corp.",)        │
+    │ (2,siège,1)                 │
+    │ (3,direction,2)             │
+    │ (4,comptabilité,1)          │
+    │ (5,"direction technique",3) │
+    │ (6,"hotline niveau II",5)   │
+    │ (7,"datacenter skynet",1)   │
+    │ (8,"technique & réseau",7)  │
+    │ (9,"Hotline niveau I",7)    │
+    │ (10,Direction,7)            │
+    └─────────────────────────────┘
+    (10 rows)
 
 Le résultat de la requête ci dessus ne possède **qu'une seule colonne** de type `department`. Ce que l'on appelle pompeusement *requête orientée objet* en Postgresql n'est que le fait de manipuler des tuples comme des valeurs mais cela est déjà extrêmement puissant car si on modifie la ligne suivante dans la requête SQL vue plus haut:
 
@@ -495,7 +493,10 @@ Dès lors, la colonne `departments` contiendra un tableau d'entités `department
 
 ```php
       <li>Departments: <?php echo join(' &gt; ', array_map(function($dept) {
-          return sprintf('<a href="/show_department.php?department_id=%d">%s</a>', $dept["department_id"], $dept["name"]); 
+          return sprintf(
+              '<a href="/show_department.php?department_id=%d">%s</a>', 
+              $dept["department_id"],
+              $dept["name"]); 
       }, $employee["departments"])) ?>.</li>
 ```
 
