@@ -15,11 +15,11 @@ C'est également un gestionnaire de modèle orienté objet car Pomm crée des cl
 En quoi Pomm est il différent d'un ORM et pourquoi l'utiliser ?
 ---------------------------------------------------------------
 
-Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'année. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC mais ils ont apporté aussi un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données en général et de Postgresql en particulier. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités au maximum. 
+Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'années. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC mais ils ont également apporté un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données en général et de Postgresql en particulier. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités au maximum. 
 
-Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes (PHP ou autres) alors que par définition, les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, que les opérations ensemblistes sont insensibles à la taille de ces tuples et que le système de projection (SELECT) a été conçu pour les façonner. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes "orientées objet" en SQL. 
+Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes (PHP ou autres) alors que par définition, les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, que les opérations ensemblistes sont insensibles à la taille de ces tuples et que le système de projection (SELECT) a été conçu pour les **façonner**. Un ensemble de base de données est donc par essence tout sauf figé. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes "orientées objet" en SQL. 
 
-Un autre des problèmes des ORMs est lié à la couche d'abstraction: ils proposent un langage pseudo SQL orienté objet et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
+Un autre des problèmes des ORMs est lié à la couche d'abstraction: ils proposent un langage pseudo SQL orienté objet qui se cantonne souvent au plus petit commun dénominateur des fonctionnalités partagées entre les bases de données et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
 
 Le présent article vous propose de créer une application web qui cherche et affiche des informations sur les employés de la société El-Caro Corporation.
 
@@ -52,24 +52,26 @@ Ce tutoriel vous propose de créer une application simpliste de gestion des sala
 Nous allons créer un schéma nommé `company` dans notre base de données pour y créer la structure décrite ci dessus :
 
 ```sql
-el-caro$> CREATE SCHEMA company;
-el-caro$> SET search_path TO company, public;
-el-caro$> SHOW search_path;
+$> CREATE SCHEMA company;
+$> SET search_path TO company, public;
+$> SHOW search_path;
 company, public
 ```
 
 La commande `SHOW` doit nous retourner `company, public` signe que le client Postgres va d'abord chercher les objets par défaut dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Un des avantages d'utiliser un schéma est que si l'on souhaite "passer l'éponge", il suffit de lancer un `DELETE SCHEMA company CASCADE` et de recommencer. Une fois le schéma créé, implémentons la structure :
 
-    elcaro$> CREATE TABLE department (
-        department_id       serial      PRIMARY KEY,
-        name                varchar     NOT NULL,
-        parent_id           integer     REFERENCES department (department_id)
-        );
+```sql
+$> CREATE TABLE department (
+    department_id       serial      PRIMARY KEY,
+    name                varchar     NOT NULL,
+    parent_id           integer     REFERENCES department (department_id)
+    );
+```
 
 Tel que nous l'avons décrite, cette table possède un identifiant technique -- un entier -- qui s'auto-incrémente à l'aide d'une séquence qui est auto générée et initialisée à la création de la table comme l'indique Postgresql. Notons que le `parent_id` même s'il est indiqué comme référent au département parent peut être nul dans le cas du département racine. En revanche la contrainte de clé étrangère forcera tout département indiqué comme père à exister au préalable dans la table.
 
 ```sql
-el-caro$> CREATE TABLE employee (
+$> CREATE TABLE employee (
     employee_id         serial          PRIMARY KEY,
     first_name          varchar         NOT NULL,
     last_name           varchar         NOT NULL,
@@ -268,7 +270,7 @@ Là encore, nous pouvons voir que le convertisseur a fait son travail, la date d
 
 Imaginons maintenant qu'en plus de la date de naissance, nous avions besoin d'avoir directement l'age de la personne. Il est bien sûr facile de créer un accesseur supplémentaire `getAge()` dans la classe `Employee` dans laquelle nous calculerions en PHP l'age à partir de la date de naissance mais pourquoi ne pas le demander directement à Postgresql en utilisant la fonction `age()` ? 
 
-Il faut savoir que Pomm n'utilise jamais l'alias `*`. Dans les classes Map, Pomm définit une méthode `getSelectFields()` pour faire ses propres requêtes. Par défaut, cette méthode retourne tous les champs de la table, mais il est possible de la surcharger pour en enlever ou en ajouter. En d'autres termes, cette méthode définit la projection de l'objet en base de données vers l'objet entité PHP.
+Il faut savoir que Pomm n'utilise jamais l'alias `*` dans ses requêtes, il utilise pour cela la méthode `getSelectFields()` définie dans les classes Map. Par défaut, cette méthode retourne tous les champs de la table, mais il est possible de la surcharger pour en enlever ou en ajouter. En d'autres termes, **cette méthode définit la projection de l'objet en base de données vers l'objet entité PHP**.
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -296,7 +298,7 @@ Et ajoutons la ligne suivante dans la partie template de `show_employee.php` :
 
     <li>Age: <?php echo $employee['age'] ?>.</li>
 
-En rafraîchissant la page, celle-ci affiche désormais quelque chose ressemblant à `Age: 27 years 11 mons 2 days.`. C'est la sortie brute de la commande `age()` de Postgresql, Pomm ne sachant comment interpréter cette sortie, la convertit au format String. Il est possible d'étendre la définition de notre entité en y ajoutant le type de cette nouvelle colonne virtuelle pour qu'elle soit prise en charge par le convertisseur quand elle existe :
+En rafraîchissant la page, celle-ci affiche désormais quelque chose ressemblant à `Age: 27 years 11 mons 2 days.`. C'est la sortie brute de la commande `age()` de Postgresql, Pomm ne sachant comment interpréter cette sortie, la convertit au format String. Il est possible d'étendre la définition de notre entité en y ajoutant le type de cette nouvelle colonne virtuelle afin qu'elle soit prise en charge par le convertisseur quand elle existe :
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -309,11 +311,11 @@ En rafraîchissant la page, celle-ci affiche désormais quelque chose ressemblan
     }
 ```
 
-Si vous rafraîchissez désormais la page, celle-ci présente une erreur comme quoi PHP ne sait pas comment afficher une instance de la classe PHP `DateInterval`, le convertisseur a bien fait son travail. Changez l'affichage de l'age par la ligne suivante :
+Si vous rafraîchissez désormais la page, celle-ci présente une erreur comme quoi PHP ne sait pas comment afficher une instance de la classe PHP `DateInterval` : le convertisseur a bien fait son travail. Changez l'affichage de l'age par la ligne suivante :
 
       <li>Age: <?php echo $employee['age']->format("%y") ?> years old.</li>
 
-Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée est génératrice de problème car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Cela peut -- et va -- poser des problèmes lors de requêtes complexes où ce champs peut apparaitre dans plusieurs ensembles. La laisser ainsi occasionnerait des erreurs SQL de type "champs ambigu" assez délicats à déboguer. Pour prévenir cela, corrigeons la méthode comme suit :
+Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que nous avons surchargée est génératrice de problèmes car le nouveau champs `age` que nous avons ajouté est insensible à l'alias. Cela peut -- et va -- poser des problèmes lors de requêtes complexes où ce champs peut apparaitre dans plusieurs ensembles. La laisser ainsi occasionnerait des erreurs SQL de type "champs ambigu" assez délicats à déboguer. Pour prévenir cela, corrigeons la méthode comme suit :
 
 ```php
     public function getSelectFields($alias = null)
@@ -500,7 +502,7 @@ Dès lors, la colonne `departments` contiendra un tableau d'entités `department
       }, $employee["departments"])) ?>.</li>
 ```
 
-Mais cela ne suffit pas. PHP va se plaindre que l'argument passé à `array_map` n'est pas un tableau et il aura raison. N'ayant pas déclaré la colonne `departments` de la classe `Employee`, Pomm va juste y placer la chaîne de caractères renvoyée par Postgresql. Il faut donc renseigner le convertisseur que la colonne `departments` contient un tableau de type `department`. Seul souci : Pomm ne charge pas par défaut de convertisseur pour ce type de données. Nous allons donc enregistrer ce convertisseur auprès de l'instance de base de données dans le fichier `bootstrap.php`:
+Mais cela ne suffit pas. PHP va se plaindre que l'argument passé à `array_map` n'est pas un tableau et il aura raison. N'ayant pas déclaré la colonne `departments` de la classe `Employee`, Pomm va juste y placer la chaîne de caractères renvoyée par Postgresql. Il faut donc renseigner le convertisseur que la colonne `departments` contient un tableau de type `department`. Seul souci : Pomm ne charge pas par défaut de convertisseur pour ce type de données. Nous allons donc déclarer ce convertisseur auprès de l'instance de base de données dans le fichier `bootstrap.php`:
 
 ```php
 <?php // bootstrap.php
@@ -512,8 +514,8 @@ $database = new Pomm\Connection\Database(array('dsn' => 'pgsql://greg/greg', 'na
 $database->registerConverter(
     'Department', 
     new \Pomm\Converter\PgEntity($database->getConnection()->getMapFor('\ElCaro\Company\Department')), 
-    array('company.department'
-    ));
+    array('company.department')
+    );
 
 return $database->getConnection();
 ```
