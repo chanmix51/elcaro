@@ -369,6 +369,13 @@ Ainsi équipé, il est facile de se concentrer sur ce que font les requêtes plu
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
 // [...]
+
+    public function initialize()
+    {
+// [...]
+        $this->addVirtualField('department_name', 'varchar');
+    }
+
     public function getEmployeeWithDepartment($employee_id)
     {
         $department_map = $this->connection->getMapFor('\ElCaro\Company\Department');
@@ -390,6 +397,17 @@ SQL;
 
         return $this->query($sql, array($employee_id))->current();
     }
+```
+Nous utilisons cette méthode dans la partie contrôleur, à la place de `findByPk`, afin de récupérer l'employé demandé :
+
+```php
+if (!$employee = $connection
+    ->getMapFor('\ElCaro\Company\Employee')
+    ->getEmployeeWithDepartment($_GET['employee_id']))
+{
+    printf("No such user.");
+    exit;
+}
 ```
 
 Et dans le template correspondant :
