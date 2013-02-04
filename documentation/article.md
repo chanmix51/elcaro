@@ -145,9 +145,9 @@ Cette architecture ne choquera pas les utilisateurs habitués à utiliser des OR
  * Une classe portant le même nom mais affublé du suffix `Map`
  * La même classe dans le sous namespace `Base`.
 
-Les classes du sous namespace `Base` contiennent la définition déduite depuis la structure de la base de données. Ces fichiers seront écrasés à chaque introspection en cas d'évolution de la structure de la base, il serait donc malvenu qu'elle contienne du code que nous aurions pu placer là. C'est pour cela que la classe `Map` hérite de sa consœur dans `Base`. Vous pouvez y placer votre code, cette classe ne sera pas écrasée. 
+Les classes du sous namespace `Base` contiennent la définition déduite depuis la structure de la base de données. Ces fichiers seront écrasés à chaque introspection en cas d'évolution de la structure de la base, il serait donc malvenu qu'elles contiennent du code que nous aurions pu placer là. C'est pour cela que la classe `Map` hérite de sa consœur dans `Base`. Vous pouvez y placer votre code, cette classe ne sera pas écrasée. 
 
-Les utilisateurs d'ORMs ne seront pas non plus surpris d'apprendre que la classe Map est l'outil qui s'occupera de gérer la vie leur entité correspondante avec la base de données, à savoir :
+Les utilisateurs d'ORMs ne seront pas non plus surpris d'apprendre que la classe Map est l'outil qui s'occupera de gérer la vie de leur entité correspondante avec la base de données, à savoir :
 
  * `DepartmentMap` sauvegarde, génère et renvoie des collections d'entités `Department`.
  * `EmployeeMap` renvoie des collections d'entités `Employee`.
@@ -352,7 +352,7 @@ SELECT %A, dept.name FROM %B NATURAL JOIN %C WHERE employee_id = ?
  * %B est la table des employés.
  * %C est la table des départements.
 
-B et C sont facilement remplacés grâce à la méthode `getTableName()` de chaque classe Map. Nous savons que l'on peut obtenir la liste des colonnes a ramener avec la méthode `getSelectFields()` mais cette méthode retourne un tableau associatif dont la clé est l'alias du champs et la valeur hé bien ... sa valeur. Il faut donc formater ce tableau en une liste de champs. Les classes Map proposent pour cela des méthodes dédiées : [les formateurs](http://pomm.coolkeums.org/documentation/manual-1.1#fields-formatters).
+B et C sont facilement remplacés grâce à la méthode `getTableName()` de chaque classe Map. Nous savons que l'on peut obtenir la liste des colonnes à ramener avec la méthode `getSelectFields()` mais cette méthode retourne un tableau associatif dont la clé est l'alias du champs et la valeur hé bien ... sa valeur. Il faut donc formater ce tableau en une liste de champs. Les classes Map proposent pour cela des méthodes dédiées : [les formateurs](http://pomm.coolkeums.org/documentation/manual-1.1#fields-formatters).
 
  * `formatFields(methode, alias)`
  * `formatFieldsWithAlias(methode, alias)`
