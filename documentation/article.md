@@ -381,24 +381,24 @@ Ainsi équipé, il est facile de se concentrer sur ce que font les requêtes plu
         $department_map = $this->connection->getMapFor('\ElCaro\Company\Department');
         $sql = <<<SQL
 SELECT
-  %s, dept.name AS department_name
+  :employee_fields_emp, dept.name AS department_name
 FROM
-  %s emp
-    NATURAL JOIN %s dept
+  :employee_table emp
+    NATURAL JOIN :department_table dept
 WHERE
     emp.employee_id = ?
 SQL;
 
-        $sql = sprintf($sql,
-            $this->formatFieldsWithAlias('getSelectFields', 'emp'),
-            $this->getTableName(),
-            $department_map->getTableName()
-        );
+        $sql = strtr($sql, array(
+            ':employee_fields_emp' => $this->formatFieldsWithAlias('getSelectFields', 'emp'),
+            ':employee_table' => $this->getTableName(),
+            ':department_table' => $department_map->getTableName()
+        ));
 
         return $this->query($sql, array($employee_id))->current();
     }
 ```
-Nous utilisons cette méthode dans la partie contrôleur, à la place de `findByPk`, afin de récupérer l'employé demandé :
+Remplaçons dans notre contrôleur l'appel à `findByPk` par cette méthode :
 
 ```php
 if (!$employee = $connection
