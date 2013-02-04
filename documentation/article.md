@@ -417,31 +417,29 @@ La possibilité de faire des requêtes SQL depuis les classes Map est une foncti
         $sql = <<<SQL
 WITH RECURSIVE
   depts  (department_id, name, parent_id) AS (
-      SELECT %s FROM %s NATURAL JOIN %s emp WHERE emp.employee_id = ?
+      SELECT :department_fields FROM :department_table NATURAL JOIN :employee_table emp WHERE emp.employee_id = ?
     UNION ALL
-      SELECT %s FROM depts parent JOIN %s d ON parent.parent_id = d.department_id
+      SELECT :department_alias FROM depts parent JOIN :department_table d ON parent.parent_id = d.department_id
   )
 SELECT
-  %s, array_agg(depts.name) AS department_names
+  :employee_alias, array_agg(depts.name) AS department_names
 FROM
-  %s emp,
+  :employee_table emp,
   depts
 WHERE
     emp.employee_id = ?
 GROUP BY
-  %s
+  :group_by
 SQL;
 
-        $sql = sprintf($sql,
-            $department_map->formatFields('getSelectFields'),
-            $department_map->getTableName(),
-            $this->getTableName(),
-            $department_map->formatFields('getSelectFields', 'd'),
-            $department_map->getTableName(),
-            $this->formatFieldsWithAlias('getSelectFields', 'emp'),
-            $this->getTableName(),
-            $this->formatFields('getGroupByFields', 'emp')
-        );
+        $sql = strtr($sql, array(
+            ':department_fields' => $department_map->formatFields('getSelectFields'),
+            ':department_alias' => $department_map->formatFields('getSelectFields', 'd'),
+            ':department_table' => $department_map->getTableName(),
+            ':employee_alias' => $this->formatFieldsWithAlias('getSelectFields', 'emp'),
+            ':employee_table' => $this->getTableName(),
+            ':group_by' => $this->formatFields('getGroupByFields', 'emp'),
+        ));
 
         return $this->query($sql, array($employee_id, $employee_id))->current();
     }
