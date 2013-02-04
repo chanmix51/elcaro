@@ -552,3 +552,51 @@ class EmployeeMap extends BaseEmployeeMap
 ```
 
 ![Alt text](department.png "Department tree")
+
+Le fichier `show_department.php` est laissé à titre d'excercice :)
+
+Écrire dans la base
+-------------------
+
+Imaginons maintenant que l'interface `show_employee.php` permette de changer le status 'manager / worker' d'un employé en cliquant dessus. Modifions le template pour créer le lien :
+
+```php
+      <li>Status: <a href="employee_change_status.php?status=<?php echo $employee['is_manager'] ? 1 : 0 ?>&employee_id=<?php echo $employee["employee_id"] ?>"><?php echo $employee["is_manager"] ? "manager" : "worker" ?></a>.</li>
+```
+
+Les utilisateurs d'ORMs auront probablement le réflexe d'écrire le contrôleur de sauvegarde de la façon suivante :
+
+ 1. Je récupère l'employé par son id.
+ 2. S'il n'existe pas je renvoie une notification d'erreur.
+ 3. Sinon je le mets à jour
+ 4. Je renvoie une réponse.
+
+Postgresql permet de faire tout cela presqu'en un seul temps. Regardons la structure d'un UPDATE :
+
+```sql
+UPDATE :table SET :champs1 = :valeur1, [:champsN = :valeurN] WHERE :clause_where RETURNING :list_champs
+```
+
+C'est à dire qu'en faisant cet update, on peut mettre à jour un enregistrement sur un id précis -- s'il existe -- et retourner de quoi hydrater une entité avec les valeurs *mises à jour* de la base de données, c'est ce que fait la méthode `updateByPk()`
+
+```php
+<?php // employee_change_status.php
+
+$connection = require(__DIR__."/bootstrap.php");
+
+// CONTROLLER
+if (!$employee = $connection->getMapFor('\ElCaro\Company\Employee')
+    ->updateByPk(array('employee_id' => $_GET['employee_id']), array("is_manager" => $_GET["status"] == 0)))
+{
+    printf("No such employee !"); exit;
+}
+
+header(sprintf("Location: show_employee.php?employee_id=%d", $employee["employee_id"]));
+```
+
+Pour conclure
+-------------
+
+Au cours de cet article, nous n'avons fait qu'égratigner la surface des possibilités offertes par Postgresql. Nous pourrions continuer et mettre à contribution le fameux type clé -> valeur HStore, faire des tags hierarchiques en utilisant des chemins matérialisés LTree, créer un historique des changements d'un employee en créant une table dont une des colonne serait de type `employee` ... la liste des exemples est encore longue.
+
+Pomm est un outil dont l'objectif est de permettre aux développeurs de profiter pleinement des fonctionnalités de Postgresql. Effectivement, la barrière peut parfois sembler mince entre Pomm et un ORM. À la différence d'un ORM, Pomm est un outil spécialisé qui va permettre de gagner en vitesse et en performances. En s'appuyant sur des fonctionnalités uniques du moteur sous jacent, Pomm ouvre des perspectives intéressantes qu'il était difficile d'envisager directement avec PDO ou avec un ORM. 
