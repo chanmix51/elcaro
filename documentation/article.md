@@ -435,28 +435,27 @@ La possibilité de faire des requêtes SQL depuis les classes Map est une foncti
         $sql = <<<SQL
 WITH RECURSIVE
   depts  (department_id, name, parent_id) AS (
-      SELECT :department_fields FROM :department_table NATURAL JOIN :employee_table emp WHERE emp.employee_id = ?
+      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = ?
     UNION ALL
-      SELECT :department_alias FROM depts parent JOIN :department_table d ON parent.parent_id = d.department_id
+      SELECT :department_fields_alias_d FROM depts parent JOIN :department_table d ON parent.parent_id = d.department_id
   )
 SELECT
-  :employee_alias, array_agg(depts.name) AS department_names
+  :employee_fields_alias_emp, array_agg(depts.name) AS department_names
 FROM
   :employee_table emp,
   depts
 WHERE
     emp.employee_id = ?
 GROUP BY
-  :group_by
+  :employee_group_by_emp
 SQL;
 
         $sql = strtr($sql, array(
-            ':department_fields' => $department_map->formatFields('getSelectFields'),
-            ':department_alias' => $department_map->formatFields('getSelectFields', 'd'),
-            ':department_table' => $department_map->getTableName(),
-            ':employee_alias' => $this->formatFieldsWithAlias('getSelectFields', 'emp'),
-            ':employee_table' => $this->getTableName(),
-            ':group_by' => $this->formatFields('getGroupByFields', 'emp'),
+            ':department_fields_alias_d' => $department_map->formatFieldsWithAlias('getSelectFields', 'd'),
+            ':department_table'          => $department_map->getTableName(),
+            ':employee_fields_alias_emp' => $this->formatFieldsWithAlias('getSelectFields', 'emp'),
+            ':employee_table'            => $this->getTableName(),
+            ':employee_group_by_emp'     => $this->formatFields('getGroupByFields', 'emp'),
         ));
 
         return $this->query($sql, array($employee_id, $employee_id))->current();
