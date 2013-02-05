@@ -4,7 +4,7 @@ Pomm - Postgresql / PHP Object Model Manager
 Qu'est ce que c'est ?
 ---------------------
 
-Pomm est un **gestionnaire de modèle objet** dédié au moteur de base de données Postgresql. Qu'est-ce qu'un gestionnaire de modèle objet ?
+[Pomm](http://pomm.coolkeums.org) est un **gestionnaire de modèle objet** dédié au moteur de base de données Postgresql. Qu'est-ce qu'un gestionnaire de modèle objet ?
 
 C'est avant tout un **hydrateur** d'objets qui utilise un convertisseur entre PHP et Postgresql pour assurer qu'un booléen dans Postgres sera vu depuis PHP comme tel, de même pour les tableaux, le type clé -> valeur 'HStore', les types géométriques, XML, JSON, etc.
 
@@ -17,9 +17,15 @@ En quoi Pomm est il différent d'un ORM et pourquoi l'utiliser ?
 
 Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'années. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC, mais ils ont également apporté un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données en général et de Postgresql en particulier. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités au maximum. 
 
-Un des plus gros problèmes des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes (PHP ou autres) alors que par définition, les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, que les opérations ensemblistes sont insensibles à la taille de ces tuples et que le système de projection (SELECT) a été conçu pour les **façonner**. Un ensemble de bases de données est donc par essence tout sauf figé. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes « orientées objet » en SQL. 
+Une des limitations des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes (PHP ou autres) alors que,
 
-Un autre des problèmes des ORMs est lié à la couche d'abstraction : ils proposent un langage pseudo SQL orienté objet qui se cantonne souvent au plus petit commun dénominateur des fonctionnalités partagées entre les bases de données et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
+ * les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, 
+ * que les opérations ensemblistes sont insensibles à la taille de ces tuples 
+ * que le système de projection (SELECT) a été conçu pour les **façonner**. 
+ 
+Un ensemble de base de données est donc par essence tout sauf figé. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes « orientées objet » en SQL. 
+
+Un autre des problèmes des ORMs est lié à la couche d'abstraction : ils proposent un langage pseudo SQL orienté objet qui se cantonne souvent au plus petit commun dénominateur des fonctionnalités partagées entre tous les moteurs de bases de données et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
 
 Le présent article vous propose de créer une application web qui cherche et affiche des informations sur les employés de la société El-Caro Corporation.
 
@@ -470,6 +476,8 @@ Et dans le template :
 
 La requête ci-dessus, utilise la clause SQL `WITH` qui permet de créer des ensembles nommés et de les rappeler. Cela évite de faire des sub-select. Le premier ensemble aliasé `depts` est la clause récursive. Elle possède un ensemble de départ -- le département direct de l'employé -- uni à une requête récursive qui remonte l'arbre jusqu'à ce que ça ne soit plus possible. L'ensemble `depts` va donc contenir tous les départements de l'employé. La requête finale va tout simplement faire un CROSS JOIN entre les informations de l'employé et l'agrégat en tableaux du nom de ses départements.
 
+Une remarque concernant la construction de requêtes, il a été évoqué dans l'introduction de cet article, la construction de requêtes alors qu'ici la condition est connue d'avance : `emp.employee_id = ?`. Dans les interfaces de recherche, il se peut qu'on ne puisse savoir à l'avance sur quels critères la recherche va porter. Pomm propose pour cela une [classe de construction de clauses where](http://pomm.coolkeums.org/documentation/manual-1.1#and-or-the-where-class) qui respecte les priorité ET et OU et qui peut être passée directement en paramètre à la méthode `findWhere()`. 
+
 Requêtes orientées objet
 ------------------------
 
@@ -597,6 +605,8 @@ header(sprintf("Location: show_employee.php?employee_id=%d", $employee["employee
 Pour conclure
 -------------
 
-Au cours de cet article, nous n'avons fait qu'égratigner la surface des possibilités offertes par Postgresql. Nous pourrions continuer et mettre à contribution le fameux type clé -> valeur HStore, faire des tags hierarchiques en utilisant des chemins matérialisés LTree, créer un historique des changements d'un employee en créant une table dont une des colonne serait de type `employee` ... la liste des exemples est encore longue.
+Au cours de cet article, nous n'avons fait qu'égratigner la surface des possibilités offertes par Postgresql. Nous pourrions continuer et mettre à contribution le fameux type clé -> valeur HStore, faire des tags hierarchiques en utilisant des chemins matérialisés LTree, créer un historique des changements d'un employé en créant une table dont une des colonne serait de type `employee` ... la liste des exemples est encore longue.
 
-Pomm est un outil dont l'objectif est de permettre aux développeurs de profiter pleinement des fonctionnalités de Postgresql. Effectivement, la barrière peut parfois sembler mince entre Pomm et un ORM. À la différence d'un ORM, Pomm est un outil spécialisé qui va permettre de gagner en vitesse et en performances. En s'appuyant sur des fonctionnalités uniques du moteur sous jacent, Pomm ouvre des perspectives intéressantes qu'il était difficile d'envisager directement avec PDO ou avec un ORM. 
+Pomm est un outil dont l'objectif est de permettre aux développeurs de profiter pleinement des fonctionnalités de Postgresql. Effectivement, la barrière peut parfois sembler mince entre Pomm et un ORM. À la différence d'un ORM, Pomm est un outil spécialisé qui va permettre de gagner en vitesse et en performances. En s'appuyant sur des fonctionnalités uniques du moteur sous-jacent, Pomm ouvre des perspectives intéressantes qu'il était difficile d'envisager directement avec juste PDO ou avec un ORM. 
+
+Vous pouvez retrouver l'entrepôt Git de cet article [sur Github](https://github.com/chanmix51/elcaro "ElCaro"). Un grand merci à [Julien Bianchi](https://github.com/jubianchi "Julien BIANCHI") qui a été jusqu'à packager une VM Vagrant / VirtualBox pour ce tutoriel. Vous pouvez retrouver de quoi la construire [dans son répository](https://github.com/jubianchi/elcaro/tree/vagrant "Fichiers Vagrant"). Merci également à [Nicolas Joseph](https://github.com/sanpii "Nicolas Joseph") dont l'aide très efficace a beaucoup apporté à cet article.
