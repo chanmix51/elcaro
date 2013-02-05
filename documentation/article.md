@@ -579,7 +579,7 @@ Les utilisateurs d'ORMs auront probablement le réflexe d'écrire le contrôleur
  3. Sinon je le mets à jour
  4. Je renvoie une réponse.
 
-Postgresql permet de faire tout cela presqu'en un seul temps. Regardons la structure d'un UPDATE :
+Postgresql permet de faire tout cela presque en un seul temps. Regardons la structure d'un UPDATE :
 
 ```sql
 UPDATE :table SET :champs1 = :valeur1, [:champsN = :valeurN] WHERE :clause_where RETURNING :list_champs
