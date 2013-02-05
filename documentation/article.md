@@ -422,7 +422,7 @@ Et dans le template correspondant :
       <li>Department: <?php echo $employee["department_name"] ?>.</li>
 ```
 
-La possibilité de faire des requêtes SQL depuis les classes Map est une fonctionnalité extrêmement puissante car elle permet d'utiliser tous les mécanismes SQL de Postgresql. Par exemple, les départements sont une structure arborescente, nous pouvons demander à Postgresql de ramener sous forme de tableaux l'ensemble des services auxquels chaque utilisateur appartient. Pour cela, nous utilisons une requête récursive avec un agrégateur de tableaux et déclarons notre colonne comme un tableau de chaîne de caractères :
+La possibilité de faire des requêtes SQL depuis les classes Map est une fonctionnalité extrêmement puissante car elle permet d'utiliser tous les mécanismes SQL de Postgresql. Par exemple, les départements sont une structure arborescente, nous pouvons demander à Postgresql de ramener sous forme de tableaux l'ensemble des services auxquels chaque utilisateur appartient. Pour cela, nous utilisons une requête récursive avec un agrégateur de tableaux et déclarons notre colonne comme un tableau de chaînes de caractères :
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -601,6 +601,8 @@ if (!$employee = $connection->getMapFor('\ElCaro\Company\Employee')
 
 header(sprintf("Location: show_employee.php?employee_id=%d", $employee["employee_id"]));
 ```
+
+Cette méthode ne fait que mettre à jour un enregistrement sur un nombre défini d'attributs. Il est de la même façon possible de sauvegarder et / ou créer des entités en base avec la méthode `saveOne()` sans vous soucier s'il s'agit d'une mise à jour ou une insertion. Toutes ces méthodes retournent -- grâce à l'emploi en interne de `RETURNING :select_fields` -- une entité mise à jour avec les valeurs de la base de données. Plus d'information est disponible dans la [documentation](pomm.coolkeums.org/documentation/manual-1.1 "Pomm's documentation").
 
 Pour conclure
 -------------
