@@ -1,31 +1,31 @@
 Pomm - Postgresql / PHP Object Model Manager
 ============================================
 
-Qu'est ce que c'est ?
----------------------
+What is it ?
+------------
 
-[Pomm](http://pomm.coolkeums.org) est un **gestionnaire de modèle objet** dédié au moteur de base de données Postgresql. Qu'est-ce qu'un gestionnaire de modèle objet ?
+[Pomm](http://pomm.coolkeums.org) is an **Object Model Manager** dedicated to the Postgresql relational database engine. Whait is an object model manager ?
 
-C'est avant tout un **hydrateur** d'objets qui utilise un convertisseur entre PHP et Postgresql pour assurer qu'un booléen dans Postgres sera vu depuis PHP comme tel, de même pour les tableaux, le type clé -> valeur 'HStore', les types géométriques, XML, JSON, etc.
+It is upon all an objet hydtrator using a converter between PHP and Postgresql to ensure a boolean in Postgres will be seen in PHP as is and so on for arrays, key -> value store HStore, geometric types, XML, JSON, etc.
 
-Cette fonctionnalité de conversion est très importante, car le typage dans Postgresql est un élément incontournable de la définition du schéma par contrainte. La possibilité d'enrichir Postgresql avec des types personnalisés est prise en compte.
+This conversion functionnality is really important since elements types in Postgresql are a pillar of the constraint based schema structure. The possibility to extend Postgresql types set with custom types is taken in account.
 
-C'est également un gestionnaire de modèle orienté objet car Pomm crée des classes de mapping qui lient les structures SQL avec des objets PHP. Nous verrons là encore les grosses différences entre Pomm et les ORMs classiques et comment utiliser la puissance du SQL de Postgres au service d'une petite application. 
+It is also an object oriented model manager since Pomm creates mapping classes linking the SQL structures with PHP objects. We will see here again major differences between Pomm and classical ORMs and how to benefit from Postgesql features in a small application.
 
-En quoi Pomm est il différent d'un ORM et pourquoi l'utiliser ?
----------------------------------------------------------------
+What makes Pomm different from an ORM and why to use it ?
+---------------------------------------------------------
 
-Il est difficile de répondre rapidement à cette question sans tomber dans l'ornière du débat pro / anti ORMs. L'auteur développe avec PHP et Postgresql depuis plus d'une dizaine d'années. L'avènement des ORMs a certes changé la façon d'utiliser les bases de données en apportant des vraies couches modèles au sein du MVC, mais ils ont également apporté un certain nombre d'inconvénients très handicapants pour les habitués des fonctionnalités des bases de données en général et de Postgresql en particulier. Pomm part donc du parti pris de ne fonctionner qu'avec Postgresql et son objectif est de permettre aux développeurs PHP de tirer parti de ses fonctionnalités au maximum. 
+It is uneasy to quickly answer this question without falling in the Pro / Cons ORMs endless flamewar. The author has been working with PHP and Postgresql for more than 10 years. The rising of ORMs certainly changed the way how databases are used in making real model layers within the MVC but they also came with a certain number of very annoying pitfalls for programmers used to deal with relational databases. Pomm takes the side to work only with Postgresql and it aims at making developers to leverage the most of its rich features.
 
-Une des limitations des ORMs est qu'en calquant une logique orientée objet sur des structures SQL, ils figent ces dernières suivant la définition de classes (PHP ou autres) alors que,
+One of the main ORMs limitation is the structure freeze. As the class definition is engraved into the code, it also freezes the relationnal structure. But, knowing that 
 
- * les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, 
- * que les opérations ensemblistes sont insensibles à la taille de ces tuples 
- * que le système de projection (SELECT) a été conçu pour les **façonner**. 
+ * databases only manipulate [sets](http://en.wikipedia.org/wiki/Relational_algebra "relational algebra") of tuples,
+ * relationnal operations are insensitive to the size of these tuples,
+ * project system (SELECT) as been made to shape them.
  
-Un ensemble de base de données est donc par essence tout sauf figé. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que Postgresql sait manipuler des entités comme des objets, nous verrons comment faire des requêtes « orientées objet » en SQL. 
+A set in a database is everything but frozen. We will see how Pomm leverages PHP's flexibility to create elastic objects that fit our needs. This is even more significant that Postgresql knows how to manipulate entities like objects. We will see how to perform object oriented SQL queries.
 
-Un autre des problèmes des ORMs est lié à la couche d'abstraction : ils proposent un langage pseudo SQL orienté objet qui se cantonne souvent au plus petit commun dénominateur des fonctionnalités partagées entre tous les moteurs de bases de données et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
+Another ORM limitation is due to their abstraction layer: they do propose a pseudo object oriented SQL language that only provide the smallest feature set shared between database engines and it is often tiedous to find how to do something we already know how to write in classical SQL. We will see how Pomm makes developpers able to write SQL queries while make them to focus on the what instead of the how. 
 
 Le présent article vous propose de créer une application web qui cherche et affiche des informations sur les employés de la société El-Caro Corporation.
 
