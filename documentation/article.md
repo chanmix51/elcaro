@@ -6,7 +6,7 @@ What is it ?
 
 [Pomm](http://pomm.coolkeums.org) is an **Object Model Manager** dedicated to the PostgreSQL relational database engine. What is an object model manager ?
 
-It is upon all an object hydtrator using a converter between PHP and PostgreSQL to ensure a boolean in Postgres will be seen in PHP as is and so on for arrays, key -> value store HStore, geometric types, XML, JSON, etc.
+It is upon all an object hydrator using a converter between PHP and PostgreSQL to ensure a boolean in Postgres will be seen in PHP as is and so on for arrays, key -> value store HStore, geometric types, XML, JSON, etc.
 
 This conversion functionality is really important since elements types in PostgreSQL are a pillar of the constraint based schema structure. The possibility to extend PostgreSQL types set with custom types is taken in account.
 
