@@ -1,29 +1,29 @@
-Pomm - Postgresql / PHP Object Model Manager
+Pomm - PostgreSQL / PHP Object Model Manager
 ============================================
 
 What is it ?
 ------------
 
-[Pomm](http://pomm.coolkeums.org) is an **Object Model Manager** dedicated to the Postgresql relational database engine. What is an object model manager ?
+[Pomm](http://pomm.coolkeums.org) is an **Object Model Manager** dedicated to the PostgreSQL relational database engine. What is an object model manager ?
 
-It is upon all an object hydtrator using a converter between PHP and Postgresql to ensure a boolean in Postgres will be seen in PHP as is and so on for arrays, key -> value store HStore, geometric types, XML, JSON, etc.
+It is upon all an object hydtrator using a converter between PHP and PostgreSQL to ensure a boolean in Postgres will be seen in PHP as is and so on for arrays, key -> value store HStore, geometric types, XML, JSON, etc.
 
-This conversion functionality is really important since elements types in Postgresql are a pillar of the constraint based schema structure. The possibility to extend Postgresql types set with custom types is taken in account.
+This conversion functionality is really important since elements types in PostgreSQL are a pillar of the constraint based schema structure. The possibility to extend PostgreSQL types set with custom types is taken in account.
 
-It is also an object oriented model manager since Pomm creates mapping classes linking the SQL structures with PHP objects. We will see here again major differences between Pomm and classical ORMs and how to benefit from Postgesql features in a small application.
+It is also an object oriented model manager since Pomm creates mapping classes linking the SQL structures with PHP objects. We will see here again major differences between Pomm and classical ORM and how to benefit from Postgesql features in a small application.
 
 What makes Pomm different from an ORM and why to use it ?
 ---------------------------------------------------------
 
-It is uneasy to quickly answer this question without falling in the Pro / Cons ORMs endless flamewar. The author has been working with PHP and Postgresql for more than 10 years. The rising of ORMs certainly changed the way how databases are used in making real model layers within the MVC but they also came with a certain number of very annoying pitfalls for programmers used to deal with relational databases. Pomm takes the side to work only with Postgresql and it aims at making developers to leverage the most of its rich features.
+It is uneasy to quickly answer this question without falling in the Pro / Cons ORM endless flamewar. The author has been working with PHP and PostgreSQL for more than 10 years. The rising of ORM certainly changed the way how databases are used in making real model layers within the MVC but they also came with a certain number of very annoying pitfalls for programmers used to deal with relational databases. Pomm takes the side to work only with PostgreSQL and it aims at making developers to leverage the most of its rich features.
 
-One of the main ORMs limitation is the structure freeze. As the class definition is engraved into the code, it also freezes the relational structure. But, knowing that 
+One of the main ORM limitation is the structure freeze. As the class definition is engraved into the code, it also freezes the relational structure. But, knowing that 
 
  * databases only manipulate [sets](http://en.wikipedia.org/wiki/Relational_algebra "relational algebra") of tuples,
  * relational operations are insensitive to the size of these tuples,
  * project system (SELECT) as been made to shape them.
  
-A set in a database is everything but frozen. We will see how Pomm leverages PHP's flexibility to create elastic objects that fit our needs. This is even more significant that Postgresql knows how to manipulate entities like objects. We will see how to perform object oriented SQL queries.
+A set in a database is everything but frozen. We will see how Pomm leverages PHP's flexibility to create elastic objects that fit our needs. This is even more significant that PostgreSQL knows how to manipulate entities like objects. We will see how to perform object oriented SQL queries.
 
 Another ORM limitation is due to their abstraction layer: they do propose a pseudo object oriented SQL language that only provide the smallest feature set shared between database engines and it is often tedious to find how to do something we already know how to write in classical SQL. We will see how Pomm makes developers able to write SQL queries while make them to focus on the "what" instead of the "how". 
 
@@ -144,7 +144,7 @@ It uses one of the tools provided by Pomm: the [schema scanner](http://pomm.cool
             ├── EmployeeMap.php
             └── Employee.php
 
-It should not surprise ORMs users. We can see the namespace used is the name of the database given when instanciating the `Database` class and the schema name. This way, it is possible to have several classes with the same name in different namespaces. There are 3 classes per table:
+It should not surprise ORM users. We can see the namespace used is the name of the database given when instanciating the `Database` class and the schema name. This way, it is possible to have several classes with the same name in different namespaces. There are 3 classes per table:
 
  * a class with the same name as the table (capitalized) ;
  * a class with the same name and `Map` append to it ;
@@ -152,7 +152,7 @@ It should not surprise ORMs users. We can see the namespace used is the name of 
 
 The classes in the `Base` sub namespace contain structure definition deducted from the database. This files are overwritten every time the database is introspected, it would be sad some of your code to be there. This is why the `Map` class inherits from its `Base` sister. This is where you can describe your model definition.
 
-ORMs users will also not be surprised to see the `Map` class is the tool that will manage their matching entity's life with the database:
+ORM users will also not be surprised to see the `Map` class is the tool that will manage their matching entity's life with the database:
 
  * `DepartmentMap` saves, generates and returns collections of `Department` entities ;
  * `EmployeeMap` saves, generates and returns collections of `Employee` entities.
@@ -273,7 +273,7 @@ if (!$employee = $connection
 
 Here again, we can see the converter made its job: date of birth is a PHP `DateTime` instance, the field `is_manager` is a boolean and we can format `day_salary` correctly.
 
-Imagine now we need to display the age of the employee. It is of course possible to add a `getAge()` accessor that would compute the age from the data of birth in PHP in the `Employee` class, but why not ask this information directly from Postgresql ?
+Imagine now we need to display the age of the employee. It is of course possible to add a `getAge()` accessor that would compute the age from the data of birth in PHP in the `Employee` class, but why not ask this information directly from PostgreSQL ?
 
 We must realize Pomm never uses the wild card `*` in its queries, it uses the `getSelectFields()` method defined in the map classes. By default, this method returns all table fields but is is also possible to overload it to add or filter fields. In other words, this method defines **the projection of the database object into the PHP entity**.
 
@@ -303,7 +303,7 @@ And add the following line in the template part of `show_employee.php`:
 
     <li>Age: <?php echo $employee['age'] ?>.</li>
 
-Refresh the page, it should now display something like `Age: 27 years 11 mons 2 days.`. This is the raw output of Postgresql's `age()` function. Since Pomm does not know how to interpret this, it converts it as a string. It is possible to extend our entity's definition in adding the type of this new virtual column to make it handled by the converter system when it exists:
+Refresh the page, it should now display something like `Age: 27 years 11 mons 2 days.`. This is the raw output of PostgreSQL's `age()` function. Since Pomm does not know how to interpret this, it converts it as a string. It is possible to extend our entity's definition in adding the type of this new virtual column to make it handled by the converter system when it exists:
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -336,7 +336,7 @@ Before we conclude this part, it is important to say the `getSelectFields()` met
 Custom queries
 --------------
 
-If now, we want to display the name of the employee's department instead of the `department_id`, using `findByPk()` is not enough. We have to create a joint query to bring this information back. Let's create a method in our model class which returns an employee with department informations. We can immediately write the following query (The [NATURAL JOIN](http://www.postgresql.org/docs/8.4/static/queries-table-expressions.html "documentation Postgresql") creates joints on fields in common).
+If now, we want to display the name of the employee's department instead of the `department_id`, using `findByPk()` is not enough. We have to create a joint query to bring this information back. Let's create a method in our model class which returns an employee with department informations. We can immediately write the following query (The [NATURAL JOIN](http://www.PostgreSQL.org/docs/8.4/static/queries-table-expressions.html "documentation PostgreSQL") creates joints on fields in common).
 
 ```sql
 SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id = ?
@@ -421,7 +421,7 @@ And in the corresponding template:
       <li>Department: <?php echo $employee["department_name"] ?>.</li>
 ```
 
-Being able to perform custom SQL queries from map classes is a very powerful functionality as it allow developers to leverage Postgressql features. By example, we know that departments are structured as a tree. We can ask Postgresql to bring back in an array all the departments an employee belongs to. In order to do that, we can use a SQL recursive query with an array aggregation:
+Being able to perform custom SQL queries from map classes is a very powerful functionality as it allow developers to leverage Postgressql features. By example, we know that departments are structured as a tree. We can ask PostgreSQL to bring back in an array all the departments an employee belongs to. In order to do that, we can use a SQL recursive query with an array aggregation:
 
 ```php
 <?php // lib/ElCaro/Company/EmployeeMap.php
@@ -480,7 +480,7 @@ Object oriented queries
 
 Even though if the previous query is a good thing, what if we want to create a link on each department that would point to its profile ? We hence need to get the `department_id` alongside with the name. We would create a new field that aggregate ids but it would not be really handy.
 
-Postgresql does propose a very interesting feature: when you do create a table, it automatically creates the according matching composite type. This means the type `company.department` does exist and you can use it in your queries:
+PostgreSQL does propose a very interesting feature: when you do create a table, it automatically creates the according matching composite type. This means the type `company.department` does exist and you can use it in your queries:
 
     elcaro$> SELECT department FROM department;
     ┌─────────────────────────────┐
@@ -569,14 +569,14 @@ Let's now imagine the interface `show_employee.php` makes user able to change th
       <li>Status: <a href="employee_change_status.php?status=<?php echo $employee['is_manager'] ? 1 : 0 ?>&employee_id=<?php echo $employee["employee_id"] ?>"><?php echo $employee["is_manager"] ? "manager" : "worker" ?></a>.</li>
 ```
 
-ORMs users would probably write the controller this way:
+ORM users would probably write the controller this way:
 
  1. I fetch the employee from its id.
  2. If it does not exist I send an error notification back.
  3. Otherwise I update the record.
  4. I send the response back.
 
-Postgresql can do almost all of that in one move. Let's see a structure of an UPDATE statement:
+PostgreSQL can do almost all of that in one move. Let's see a structure of an UPDATE statement:
 
 ```sql
 UPDATE :table SET :field1 = :value1, [:fieldN = :valueN] WHERE :clause_where RETURNING :list_field
@@ -604,8 +604,10 @@ This method does only update a single employee on a defined number of attributes
 Conlusion
 ----------
 
-During this tutorial, we just scratched the surface of the possibilities offered by Postgresql. We could continue and leverage HStore key -> value store, create hierarchical tags using materialized path (LTree), version database change creating a table with a `company.employee` column type. There would be so much more to say.
+During this tutorial, we just scratched the surface of the possibilities offered by PostgreSQL. We could continue and leverage HStore key -> value store, create hierarchical tags using materialized path (LTree), version database change creating a table with a `company.employee` column type. There would be so much more to say.
 
-Pomm is a tool which aims at bringing postgresql powerful features to developers fingertips. The line between Pomm and ORMs may look very thin but the underlying philosophy is utterly different. Pomm acts as a specialized tool, it is efficient and can speed up your development. In leveraging Postgresql unique features, Pomm opens interesting perspectives one could not easily reach either by using PDO nor ORMs.
+Pomm is a tool which aims at bringing PostgreSQL powerful features to developers fingertips. The line between Pomm and ORM may look very thin but the underlying philosophy is utterly different. Pomm acts as a specialized tool, it is efficient and can speed up your development. In leveraging PostgreSQL unique features, Pomm opens interesting perspectives one could not easily reach either by using PDO nor ORM.
 
 You can find this tutorial's [github repository online](https://github.com/chanmix51/elcaro "ElCaro"). I want to thanks [Julien Bianchi](https://github.com/jubianchi "Julien BIANCHI") who went up to package a VM Vagrant / VirtualBox for this tutorial. You can find this in his [Github repository](https://github.com/jubianchi/elcaro/tree/vagrant). Also many thanks to [Nicolas Joseph](https://github.com/sanpii "Nicolas Joseph") for his very efficient help on this article.
+
+
