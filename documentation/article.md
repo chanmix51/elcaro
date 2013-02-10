@@ -25,14 +25,14 @@ One of the main ORMs limitation is the structure freeze. As the class definition
  
 A set in a database is everything but frozen. We will see how Pomm leverages PHP's flexibility to create elastic objects that fit our needs. This is even more significant that Postgresql knows how to manipulate entities like objects. We will see how to perform object oriented SQL queries.
 
-Another ORM limitation is due to their abstraction layer: they do propose a pseudo object oriented SQL language that only provide the smallest feature set shared between database engines and it is often tedious to find how to do something we already know how to write in classical SQL. We will see how Pomm makes developers able to write SQL queries while make them to focus on the what instead of the how. 
+Another ORM limitation is due to their abstraction layer: they do propose a pseudo object oriented SQL language that only provide the smallest feature set shared between database engines and it is often tedious to find how to do something we already know how to write in classical SQL. We will see how Pomm makes developers able to write SQL queries while make them to focus on the "what" instead of the "how". 
 
-This article proposed to present the making of an application which search and display informations about employees in the "El-Caro Corporation" company.
+This article proposes to present the making of an application which search and display informations about employees in the "El-Caro Corporation" company.
 
 Application setup
 -----------------
 
-The following application does not use a framework and is voluntarily simplistic. It is obviously recommended to use one. There are adapters for [Silex et Symfony](http://pomm.coolkeums.org/download). Do not be surprised not to find pretty URLs (routing), encapsulated controllers (and testable), template engine (recommended) and other good practices. This will of course be far from what a REST application would like but it will keep us to focus on Pomm this way.
+The following application does not use a framework and is voluntarily simplistic. It is obviously recommended to use one. There are adapters for [Silex et Symfony](http://pomm.coolkeums.org/download). Do not be surprised not to find pretty URLs (routing), encapsulated controllers (and testable), template engine (recommended) and other good practices. This will of course be far from what a REST application would like but it will make us to focus on Pomm this way.
 
 We are going to use [Composer](http://composer.org "Composer is good.") to install Pomm and take advantage of its autoloader. In order to do this, no more than a `composer.json` file in an empty directory is needed:
 
