@@ -10,7 +10,7 @@ It is upon all an object hydrator using a converter between PHP and PostgreSQL t
 
 This conversion functionality is really important since elements types in PostgreSQL are a pillar of the constraint based schema structure. The possibility to extend PostgreSQL types set with custom types is taken in account.
 
-It is also an object oriented model manager since Pomm creates mapping classes linking the SQL structures with PHP objects. We will see here again major differences between Pomm and classical ORM and how to benefit from Postgesql features in a small application.
+It is also an object oriented model manager since Pomm creates mapping classes linking the SQL structures with PHP objects. We will see here again major differences between Pomm and classical ORM and how to benefit from Postgresql features in a small application.
 
 What makes Pomm different from an ORM and why to use it ?
 ---------------------------------------------------------
@@ -144,7 +144,7 @@ It uses one of the tools provided by Pomm: the [schema scanner](http://pomm.cool
             ├── EmployeeMap.php
             └── Employee.php
 
-It should not surprise ORM users. We can see the namespace used is the name of the database given when instanciating the `Database` class and the schema name. This way, it is possible to have several classes with the same name in different namespaces. There are 3 classes per table:
+It should not surprise ORM users. We can see the namespace used is the name of the database given when instantiating the `Database` class and the schema name. This way, it is possible to have several classes with the same name in different namespaces. There are 3 classes per table:
 
  * a class with the same name as the table (capitalized) ;
  * a class with the same name and `Map` append to it ;
@@ -231,7 +231,7 @@ class Employee extends BaseObject
 
 Only generic accessors `get()`, `set()`, `has()` et `clear()` cannot be overloaded. They are used to access values returned by the database. We could need that here if we want to implement a search based on the name since the `getFirstName()` accessor does not return the value stored in the database.
 
-In the real life™, such example would not be really useable as soon as the data volume goes over several dozens employees. It would not be more a hassle to [sort employees in alphabetical order](http://pomm.coolkeums.org/documentation/manual-1.1#findall) and/or use a [pager](http://pomm.coolkeums.org/documentation/manual-1.1#pagers).
+In the real life™, such example would not be really usable as soon as the data volume goes over several dozens employees. It would not be more a hassle to [sort employees in alphabetical order](http://pomm.coolkeums.org/documentation/manual-1.1#findall) and/or use a [pager](http://pomm.coolkeums.org/documentation/manual-1.1#pagers).
 
 Elastic entities
 ----------------
@@ -345,7 +345,7 @@ SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id
 However, this query using this form has several drawbacks:
 
  * It does not use the projection method `getSelectFields()` and will not return the `age` field ;
- * hardcodig the table names can be a hassle if our schema changes.
+ * hardcoding the table names can be a hassle if our schema changes.
 
 Pomm Map classes do propose methods to dynamically get those informations: Ideally, our query could be seen like this:
 
@@ -601,7 +601,7 @@ header(sprintf("Location: show_employee.php?employee_id=%d", $employee["employee
 
 This method does only update a single employee on a defined number of attributes. It is also possible to save / update entities trough the `saveOne()` method without worrying if it is an update or an insert. All these methods does update the entities with the values from the database. More about this can be read in [Pomm'sdocumentation](pomm.coolkeums.org/documentation/manual-1.1 "Pomm's documentation").
 
-Conlusion
+Conclusion
 ----------
 
 During this tutorial, we just scratched the surface of the possibilities offered by PostgreSQL. We could continue and leverage HStore key -> value store, create hierarchical tags using materialized path (LTree), version database change creating a table with a `company.employee` column type. There would be so much more to say.
