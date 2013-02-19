@@ -64,7 +64,7 @@ $> SHOW search_path;
 company, public
 ```
 
-La commande `SHOW` doit nous retourner `company, public` signe que le client va d'abord chercher les objets dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Il y a plusieurs avantages a utiliser un schéma, le plus important est de pouvoir intégrer des extensions contenant des tables à notre application sans risquer une collistion de nom. Un autre avantage est que si l'on souhaite « passer l'éponge », il suffit de lancer un `DELETE SCHEMA company CASCADE` et de recommencer. Une fois le schéma créé, implémentons la structure :
+La commande `SHOW` doit nous retourner `company, public` signe que le client va d'abord chercher les objets dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Il y a plusieurs avantages a utiliser un schéma, le plus important est de pouvoir intégrer des extensions contenant des tables à notre application sans risquer une collistion de nom. Un autre avantage est que si l'on souhaite « passer l'éponge », il suffit de lancer un `DROP SCHEMA company CASCADE` et de recommencer. Une fois le schéma créé, implémentons la structure :
 
 ```sql
 $> CREATE TABLE department (
