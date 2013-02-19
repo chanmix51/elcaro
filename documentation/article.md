@@ -58,7 +58,7 @@ $> SHOW search_path;
 company, public
 ```
 
-La commande `SHOW` doit nous retourner `company, public` signe que le client Postgres va d'abord chercher les objets par défaut dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Un des avantages d'utiliser un schéma est que si l'on souhaite « passer l'éponge », il suffit de lancer un `DELETE SCHEMA company CASCADE` et de recommencer. Une fois le schéma créé, implémentons la structure :
+La commande `SHOW` doit nous retourner `company, public` signe que le client Postgres va d'abord chercher les objets par défaut dans le schéma `company` puis ensuite dans le schéma par défaut `public`. Un des avantages d'utiliser un schéma est que si l'on souhaite « passer l'éponge », il suffit de lancer un `DROP SCHEMA company CASCADE` et de recommencer. Une fois le schéma créé, implémentons la structure :
 
 ```sql
 $> CREATE TABLE department (
