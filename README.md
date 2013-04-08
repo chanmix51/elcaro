@@ -1,7 +1,7 @@
 Pomm Tutorial
 =============
 
-This is a tutorial for Pomm 1.1. The tutorial is available in the documentation. 
+This is a tutorial for Pomm 1.1. The tutorial is available in the `documentation/` folder. 
 
 Feedbacks and PR are welcome :)
 
