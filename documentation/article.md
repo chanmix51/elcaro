@@ -40,7 +40,7 @@ Nous allons utiliser [Composer](http://composer.org "composer, c'est le bien.") 
 {
     "minimum-stability": "dev",
     "require": {
-        "pomm/pomm": "dev-master"
+        "pomm/pomm": "1.1.*@dev"
     }
 }
 ```
