@@ -6,7 +6,7 @@ Qu'est ce que c'est ?
 
 [Pomm](http://pomm.coolkeums.org) est un **gestionnaire de modèle objet** dédié au moteur de base de données PostgreSQL. Qu'est-ce qu'un gestionnaire de modèle objet ?
 
-C'est avant tout un **hydrateur** d'objets qui utilise un convertisseur entre PHP et PostgreSQL pour assurer qu'un booléen dans Postgres sera vu depuis PHP comme tel, de même pour les tableaux, le type clé -> valeur 'HStore', les types géométriques, XML, JSON, etc.
+C'est avant tout un framework orienté objet de base de données Postgresql pour PHP, composé**hydrateur** d'objets qui utilise un convertisseur entre PHP et PostgreSQL pour assurer qu'un booléen dans Postgres sera vu depuis PHP comme tel, de même pour les tableaux, le type clé -> valeur 'HStore', les types géométriques, XML, JSON, etc.
 
 Cette fonctionnalité de conversion est très importante, car le typage dans PostgreSQL est un élément incontournable de la définition du schéma par contrainte. La possibilité d'enrichir PostgreSQL avec des types personnalisés est prise en compte.
 
@@ -22,7 +22,7 @@ Une des limitations des ORM est qu'en calquant une logique orientée objet sur d
  * les bases de données ne manipulent que [des ensembles](http://fr.wikipedia.org/wiki/Alg%C3%A8bre_relationnelle "algèbre relationnelle") de tuples, 
  * que les opérations ensemblistes sont insensibles à la taille de ces tuples 
  * que le système de projection (SELECT) a été conçu pour les **façonner**. 
- 
+
 Un ensemble de base de données est donc par essence tout sauf figé. Nous verrons comment Pomm tire parti de la souplesse de PHP pour créer des objets élastiques s'adaptant à notre besoin. Ceci est d'autant plus appréciable que PostgreSQL sait manipuler des entités comme des objets, nous verrons comment faire des requêtes « orientées objet » en SQL. 
 
 Un autre des problèmes des ORM est lié à la couche d'abstraction : ils proposent un langage pseudo SQL orienté objet qui se cantonne souvent au plus petit commun dénominateur des fonctionnalités partagées entre tous les moteurs de bases de données et il est souvent délicat de trouver comment faire quelque chose qu'on sait déjà faire en SQL classique. Nous verrons comment Pomm permet de faire directement des requêtes SQL sans les inconvénients de la construction fastidieuse -- que probablement certains d'entre vous ont connu -- qui menait à des scripts peu maintenables et peu testables.
@@ -40,7 +40,7 @@ Nous allons utiliser [Composer](http://composer.org "composer, c'est le bien.") 
 {
     "minimum-stability": "dev",
     "require": {
-        "pomm/pomm": "1.1.*@dev"
+        "pomm/pomm": "dev-master"
     }
 }
 ```
@@ -327,8 +327,7 @@ Avant de conclure ce chapitre, notons que la méthode `getSelectFields()` que no
     public function getSelectFields($alias = null)
     {
         $fields = parent::getSelectFields($alias);
-        $alias = is_null($alias) ? "" : sprintf("%s.", $alias);
-        $fields['age'] = sprintf('age(%s"birth_date")', $alias);
+        $fields['age'] = sprintf('age(%s)', $this->aliasField("birth_date", $alias));
 
         return $fields;
     }
@@ -392,7 +391,7 @@ FROM
   :employee_table emp
     NATURAL JOIN :department_table dept
 WHERE
-    emp.employee_id = ?
+    emp.employee_id = $*
 SQL;
 
         $sql = strtr($sql, array(
@@ -441,7 +440,7 @@ La possibilité de faire des requêtes SQL depuis les classes Map est une foncti
         $sql = <<<SQL
 WITH RECURSIVE
   depts  (department_id, name, parent_id) AS (
-      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = ?
+      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = $*
     UNION ALL
       SELECT :department_fields_alias_d FROM depts parent JOIN :department_table d ON parent.parent_id = d.department_id
   )
@@ -451,7 +450,7 @@ FROM
   :employee_table emp,
   depts
 WHERE
-    emp.employee_id = ?
+    emp.employee_id = $*
 GROUP BY
   :employee_group_by_emp
 SQL;
@@ -476,7 +475,7 @@ Et dans le template :
 
 La requête ci-dessus, utilise la clause SQL `WITH` qui permet de créer des ensembles nommés et de les rappeler. Cela évite de faire des sub-select. Le premier ensemble aliasé `depts` est la clause récursive. Elle possède un ensemble de départ -- le département direct de l'employé -- uni à une requête récursive qui remonte l'arbre jusqu'à ce que ça ne soit plus possible. L'ensemble `depts` va donc contenir tous les départements de l'employé. La requête finale va tout simplement faire un CROSS JOIN entre les informations de l'employé et l'agrégat en tableaux du nom de ses départements.
 
-Une remarque concernant la construction de requêtes, il a été évoqué dans l'introduction de cet article, la construction de requêtes alors qu'ici la condition est connue d'avance : `emp.employee_id = ?`. Dans les interfaces de recherche, il se peut qu'on ne puisse savoir à l'avance sur quels critères la recherche va porter. Pomm propose pour cela une [classe de construction de clauses where](http://pomm.coolkeums.org/documentation/manual-1.1#and-or-the-where-class) qui respecte les priorité ET et OU et qui peut être passée directement en paramètre à la méthode `findWhere()`. 
+Une remarque concernant la construction de requêtes, il a été évoqué dans l'introduction de cet article, la construction de requêtes alors qu'ici la condition est connue d'avance : `emp.employee_id = $*`. Dans les interfaces de recherche, il se peut qu'on ne puisse savoir à l'avance sur quels critères la recherche va porter. Pomm propose pour cela une [classe de construction de clauses where](http://pomm.coolkeums.org/documentation/manual-1.1#and-or-the-where-class) qui respecte les priorité ET et OU et qui peut être passée directement en paramètre à la méthode `findWhere()`. 
 
 Requêtes orientées objet
 ------------------------

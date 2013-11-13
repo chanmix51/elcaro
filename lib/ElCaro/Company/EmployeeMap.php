@@ -19,8 +19,7 @@ class EmployeeMap extends BaseEmployeeMap
     public function getSelectFields($alias = null)
     {
         $fields = parent::getSelectFields($alias);
-        $alias = !is_null($alias) ? sprintf("%s.", $alias) : "";
-        $fields['age'] = sprintf('age(%s"birth_date")', $alias);
+        $fields['age'] = sprintf('age(%s)', $this->aliasField("birth_date", $alias));
 
         return $fields;
     }
@@ -31,7 +30,7 @@ class EmployeeMap extends BaseEmployeeMap
         $sql = <<<SQL
 WITH RECURSIVE
   depts  (department_id, name, parent_id) AS (
-      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = ?
+      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = $*
     UNION ALL
       SELECT :department_fields_alias_d FROM depts parent JOIN :department_table d ON parent.parent_id = d.department_id
   )
@@ -41,7 +40,7 @@ FROM
   :employee_table emp,
   depts
 WHERE
-    emp.employee_id = ?
+    emp.employee_id = $*
 GROUP BY
   :employee_group_by_emp
 SQL;
