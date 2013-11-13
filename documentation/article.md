@@ -4,7 +4,7 @@ Pomm - PostgreSQL / PHP Object Model Manager
 What is it ?
 ------------
 
-[Pomm](http://pomm.coolkeums.org) is an **Object Model Manager** dedicated to the PostgreSQL relational database engine. What is an object model manager ?
+[Pomm](http://pomm.coolkeums.org) is an **Object Model Manager** framework dedicated to the PostgreSQL relational database engine. What is an object model manager ?
 
 It is upon all an object hydrator using a converter between PHP and PostgreSQL to ensure a boolean in Postgres will be seen in PHP as is and so on for arrays, key -> value store HStore, geometric types, XML, JSON, etc.
 
@@ -40,7 +40,7 @@ We are going to use [Composer](http://composer.org "Composer is good.") to insta
 {
     "minimum-stability": "dev",
     "require": {
-        "pomm/pomm": "1.1.*@dev"
+        "pomm/pomm": "dev-master"
     }
 }
 ```
@@ -95,7 +95,7 @@ A data sample can be found online in [this gist](https://gist.github.com/raw/466
 PHP model generation
 --------------------
 
-Starting from this database structure, Pomm can generate classes that map to tables and manage PDO tedious operations. In a first time, let's create a `bootstrap.php` file that contains context initialization to be used by all of our applications scripts.
+Starting from this database structure, Pomm can generate classes that map to tables and do the tedious database resource management. In a first time, let's create a `bootstrap.php` file that contains context initialization to be used by all of our applications scripts.
 
 ```php
 <?php // bootstrap.php
@@ -326,8 +326,7 @@ Before we conclude this part, it is important to say the `getSelectFields()` met
     public function getSelectFields($alias = null)
     {
         $fields = parent::getSelectFields($alias);
-        $alias = is_null($alias) ? "" : sprintf("%s.", $alias);
-        $fields['age'] = sprintf('age(%s"birth_date")', $alias);
+        $fields['age'] = sprintf('age(%s)', $this->aliasField('birth_date', $alias));
 
         return $fields;
     }
@@ -339,7 +338,7 @@ Custom queries
 If now, we want to display the name of the employee's department instead of the `department_id`, using `findByPk()` is not enough. We have to create a joint query to bring this information back. Let's create a method in our model class which returns an employee with department informations. We can immediately write the following query (The [NATURAL JOIN](http://www.PostgreSQL.org/docs/8.4/static/queries-table-expressions.html "documentation PostgreSQL") creates joints on fields in common).
 
 ```sql
-SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id = ?
+SELECT *, dept.name FROM employee NATURAL JOIN department dept WHERE employee_id = $*
 ```
 
 However, this query using this form has several drawbacks:
@@ -350,7 +349,7 @@ However, this query using this form has several drawbacks:
 Pomm Map classes do propose methods to dynamically get those informations: Ideally, our query could be seen like this:
 
 ```sql
-SELECT %A, dept.name FROM %B NATURAL JOIN %C WHERE employee_id = ?
+SELECT %A, dept.name FROM %B NATURAL JOIN %C WHERE employee_id = $*
 ```
 
  * %A is the list of B table fields ;
@@ -386,12 +385,13 @@ It is now easy to focus on what the query does:
         $department_map = $this->connection->getMapFor('\ElCaro\Company\Department');
         $sql = <<<SQL
 SELECT
-  :employee_fields_emp, dept.name AS department_name
+  :employee_fields_emp,
+  dept.name AS department_name
 FROM
   :employee_table emp
     NATURAL JOIN :department_table dept
 WHERE
-    emp.employee_id = ?
+    emp.employee_id = $*
 SQL;
 
         $sql = strtr($sql, array(
@@ -440,7 +440,7 @@ Being able to perform custom SQL queries from map classes is a very powerful fun
         $sql = <<<SQL
 WITH RECURSIVE
   depts  (department_id, name, parent_id) AS (
-      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = ?
+      SELECT :department_fields_alias_d FROM :department_table d NATURAL JOIN :employee_table emp WHERE emp.employee_id = $*
     UNION ALL
       SELECT :department_fields_alias_d FROM depts parent JOIN :department_table d ON parent.parent_id = d.department_id
   )
@@ -450,7 +450,7 @@ FROM
   :employee_table emp,
   depts
 WHERE
-    emp.employee_id = ?
+    emp.employee_id = $*
 GROUP BY
   :employee_group_by_emp
 SQL;
