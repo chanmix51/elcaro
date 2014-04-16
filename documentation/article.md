@@ -40,7 +40,7 @@ We are going to use [Composer](http://composer.org "Composer is good.") to insta
 {
     "minimum-stability": "dev",
     "require": {
-        "pomm/pomm": "dev-master"
+        "pomm/pomm": "1.2.*@dev"
     }
 }
 ```
